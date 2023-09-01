@@ -27,6 +27,13 @@ public class PortfolioController {
         return portfolioRepo.findAll().stream().map(portfolio -> new PortfolioDTO(portfolio.getName(), portfolio.getDescription(), portfolio.getAccount())).toList();
     }
 
+    @GetMapping("dynamics")
+    public Dynamics getDynamics(@RequestParam(name = "currentPortfolio") String portfolio){
+        log.info("Portfolio: {}", portfolio);
+        return dynamicsRepo.findByPortfolioName(portfolio);
+    }
+
+
     @PostMapping
     public void addPortfolio(@RequestBody PortfolioDTO portfolioDTO) {
         Portfolio portfolio = new Portfolio();

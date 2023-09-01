@@ -6,4 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface DynamicsRepo extends JpaRepository<Dynamics, Long> {
+    Dynamics findByPortfolioName(String portfolioName);
 }
