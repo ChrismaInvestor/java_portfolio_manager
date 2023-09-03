@@ -6,13 +6,17 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Setter
 @RequiredArgsConstructor
-@Entity(name = "position")
+@Entity(name = "price")
 @ToString(callSuper = true)
-public class Position extends BaseEntity{
-    private String securityCode;
+public class Price extends BaseEntity{
+    private String code;
+    private Double price;
+    private Long volume;
 
-    private Long securityShare;
+    private LocalDateTime time;
 }

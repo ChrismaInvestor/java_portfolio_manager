@@ -30,7 +30,9 @@ public class PortfolioController {
     @GetMapping("dynamics")
     public Dynamics getDynamics(@RequestParam(name = "currentPortfolio") String portfolio){
         log.info("Portfolio: {}", portfolio);
-        return dynamicsRepo.findByPortfolioName(portfolio);
+        Dynamics dynamics = dynamicsRepo.findByPortfolioName(portfolio);
+        log.info("positions: {}", dynamics.getPositions());
+        return dynamics;
     }
 
 
@@ -40,7 +42,6 @@ public class PortfolioController {
         portfolio.setAccount(portfolioDTO.account());
         portfolio.setName(portfolioDTO.name());
         portfolio.setDescription(portfolioDTO.description());
-        log.info("portfolio: {}", portfolio);
         portfolioRepo.save(portfolio);
 
         Dynamics dynamics = new Dynamics();
