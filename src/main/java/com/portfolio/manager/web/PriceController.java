@@ -4,10 +4,7 @@ import com.portfolio.manager.domain.Price;
 import com.portfolio.manager.service.PriceService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -23,5 +20,10 @@ public class PriceController {
     @PostMapping
     public void addPrice(@RequestBody List<Price> minPricesOfDays){
         priceService.addPrice(minPricesOfDays);
+    }
+
+    @GetMapping("check")
+    public void check(){
+        priceService.checkIntegrityOfMinutePrices();
     }
 }

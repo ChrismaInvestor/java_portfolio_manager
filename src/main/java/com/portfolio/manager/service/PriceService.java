@@ -8,4 +8,6 @@ public interface PriceService {
     Price getLatestPrice(String code);
 
     void addPrice(List<Price> prices);
+
+    void checkIntegrityOfMinutePrices();
 }

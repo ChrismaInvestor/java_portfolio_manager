@@ -24,6 +24,7 @@ import java.time.LocalDateTime;
 public class Price extends BaseEntity{
     @NotNull
     @Pattern(regexp = "[0-9]{6}")
+    @Column(length = 6)
     private String code;
     @NotNull
     private Double price;
