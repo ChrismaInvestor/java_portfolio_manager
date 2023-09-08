@@ -3,54 +3,35 @@ import requests
 from datetime import datetime
 
 def post_minute_price(combined_code, raw_code,s):
+    url="http://localhost:8080/price"
     stock_zh_a_minute_df = ak.stock_zh_a_minute(
                 symbol=combined_code, period='1', adjust="qfq")
     stock_zh_a_minute_df = stock_zh_a_minute_df.dropna()
+
+    global today
+    stock_zh_a_minute_df = stock_zh_a_minute_df[stock_zh_a_minute_df['day'].str.contains(today)]
+
     list=[]
     for index, row in stock_zh_a_minute_df.iterrows():
         list.append({"code": raw_code, "price": row['close'],
                         "volume": row['volume'], "time": row['day']})  
     s.post(url=url, json=list)
 
+def post_security(code, name, session):
+    url = "http://localhost:8080/security"
+    session.post(url=url, json={"code":code, "name":name})
+
 
 if __name__=='__main__':
-    host = "http://localhost:8080"
-    url = host + "/price"
-
     stock_list_df = ak.stock_info_a_code_name()
-
-    print(stock_list_df.shape[0])
-
     s = requests.Session()
+    today = datetime.now().strftime("%Y-%m-%d")
 
     for index, row in stock_list_df.iterrows():
+        post_security(row['code'], row['name'], s)
         if (row['code'].startswith("0") | row['code'].startswith("3")):
             post_minute_price("sz" + row['code'], row['code'],s)
-            # stock_zh_a_minute_df = ak.stock_zh_a_minute(
-            #     symbol="sz" + row['code'], period='1', adjust="qfq")
-            # stock_zh_a_minute_df = stock_zh_a_minute_df.dropna()
-            # list=[]
-            # for index2, row2 in stock_zh_a_minute_df.iterrows():
-            #     list.append({"code": row['code'], "price": row2['close'],
-            #             "volume": row2['volume'], "time": row2['day']})
-            # s.post(url=url, json=list)
         elif (row['code'].startswith("6")):
             post_minute_price("sh" + row['code'], row['code'],s)
-            # stock_zh_a_minute_df = ak.stock_zh_a_minute(
-            #     symbol="sh" + row['code'], period='1', adjust="qfq")
-            # stock_zh_a_minute_df = stock_zh_a_minute_df.dropna()
-            # list=[]
-            # for index2, row2 in stock_zh_a_minute_df.iterrows():
-            #     list.append({"code": row['code'], "price": row2['close'],
-            #             "volume": row2['volume'], "time": row2['day']})  
-            # s.post(url=url, json=list)
         elif (row['code'].startswith("4")|row['code'].startswith("8")):
             post_minute_price("bj" + row['code'], row['code'],s)
-            # stock_zh_a_minute_df = ak.stock_zh_a_minute(
-            #             symbol="bj" + row['code'], period='1', adjust="qfq")
-            # stock_zh_a_minute_df = stock_zh_a_minute_df.dropna()
-            # list=[]
-            # for index2, row2 in stock_zh_a_minute_df.iterrows():
-            #     list.append({"code": row['code'], "price": row2['close'],
-            #                     "volume": row2['volume'], "time": row2['day']})  
-            # s.post(url=url, json=list)
