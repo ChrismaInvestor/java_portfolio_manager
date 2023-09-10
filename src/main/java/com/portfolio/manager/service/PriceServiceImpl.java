@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -26,7 +26,7 @@ public class PriceServiceImpl implements PriceService {
 
     @Override
     public Price getLatestPrice(String code) {
-        return null;
+        return priceRepo.findTopByCodeOrderByTimeDesc(code);
     }
 
     @Override
@@ -42,13 +42,15 @@ public class PriceServiceImpl implements PriceService {
 
     @Override
     public void checkIntegrityOfMinutePrices() {
-        securityRepo.findAll().forEach(security -> {
+        securityRepo.findAll().stream().parallel().forEach(security -> {
             Map<LocalDate, List<Price>> prices = priceRepo.findAllByCode(security.getCode()).stream().collect(Collectors.groupingBy(
                     price -> price.getTime().toLocalDate()
             ));
-            prices.forEach((key, value)->{
-                if (value.size()< 237){
-                    log.error("date: {}, security: {}", key, security.getCode());
+            prices.forEach((key, value) -> {
+                LocalTime time = value.get(0).getTime().toLocalTime();
+                if (time.isAfter(LocalTime.of(10,0,0))){
+                    log.error("date: {}, security: {}, start time: {}", key, security.getCode(), time);
+                    priceRepo.deleteAll(value);
                 }
             });
         });

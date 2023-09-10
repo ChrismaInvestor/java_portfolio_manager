@@ -1,27 +1,32 @@
 package com.portfolio.manager.domain;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
-import lombok.ToString;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 
 @Getter
 @Setter
 @RequiredArgsConstructor
 @Entity(name = "price")
-@ToString(callSuper = true)
+@EntityListeners(AuditingEntityListener.class)
 @Table(uniqueConstraints = {@UniqueConstraint(columnNames = {"code","time"})})
-public class Price extends BaseEntity{
+public class Price {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @CreatedDate
+    @Column(updatable = false)
+    private LocalDateTime createTime;
+
     @NotNull
     @Pattern(regexp = "[0-9]{6}")
     @Column(length = 6)

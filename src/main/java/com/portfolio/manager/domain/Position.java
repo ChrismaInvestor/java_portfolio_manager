@@ -1,5 +1,6 @@
 package com.portfolio.manager.domain;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +13,7 @@ import lombok.ToString;
 @Entity(name = "position")
 @ToString(callSuper = true)
 public class Position extends BaseEntity{
+    @Column(length = 6)
     private String securityCode;
 
     private Long securityShare;

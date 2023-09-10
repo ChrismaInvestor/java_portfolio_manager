@@ -13,7 +13,8 @@ import lombok.ToString;
 @Entity(name = "security")
 @ToString(callSuper = true)
 public class Security extends BaseEntity{
-    @Column(unique = true)
+    @Column(unique = true, length = 6)
     private String code;
+    @Column(unique = true, length = 20)
     private String name;
 }
