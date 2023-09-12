@@ -1,10 +1,8 @@
 package com.portfolio.manager.web;
 
 import com.portfolio.manager.domain.Position;
-import com.portfolio.manager.dto.OrderDTO;
-import com.portfolio.manager.dto.OrderPlacementDTO;
-import com.portfolio.manager.dto.PositionDTO;
-import com.portfolio.manager.dto.SecurityDTO;
+import com.portfolio.manager.dto.*;
+import com.portfolio.manager.integration.BidAskService;
 import com.portfolio.manager.service.PositionService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -12,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -24,6 +23,9 @@ public class PositionController {
 
     @Resource
     PositionService positionService;
+
+    @Resource
+    BidAskService bidAskService;
 
     @PostMapping
     public List<OrderDTO> addPosition(@RequestBody PositionDTO positionDTO) {
@@ -44,5 +46,10 @@ public class PositionController {
     @PostMapping("order")
     public void addOrders(@RequestBody OrderPlacementDTO orderPlacement){
         log.info("{}", orderPlacement);
+        orderPlacement.orders().stream().parallel().forEach(orderDTO -> {
+            String code = orderDTO.securityCode().split("\\.")[0];
+            String map = bidAskService.getBidAskInfo(code);
+            log.info("code:{}, bid ask: {}", code, map);
+        });
     }
 }
