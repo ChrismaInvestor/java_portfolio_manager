@@ -6,11 +6,7 @@ import com.portfolio.manager.dto.OrderDTO;
 import java.util.List;
 import java.util.Set;
 
-public interface PositionService {
-    List<Position> listPosition(String portfolioName);
-
-    Double getCash(String portfolioName);
-
+public interface OrderService {
     //Estimation
     List<OrderDTO> buySplitEven(Set<String> securityCodes, double toSellMarketValue, double cash, List<Position> holdings);
 

@@ -1,4 +1,4 @@
-package com.portfolio.manager.domain;
+package com.portfolio.manager.domain.base;
 
 import jakarta.persistence.*;
 import lombok.*;

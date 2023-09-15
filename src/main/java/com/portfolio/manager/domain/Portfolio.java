@@ -1,13 +1,15 @@
 package com.portfolio.manager.domain;
 
-import jakarta.persistence.Basic;
+import com.portfolio.manager.domain.base.BaseEntity;
 import jakarta.persistence.Column;
-import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
-import lombok.*;
+import jakarta.persistence.OneToMany;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 import org.hibernate.Hibernate;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -16,12 +18,16 @@ import java.util.Objects;
 @RequiredArgsConstructor
 @Entity(name = "portfolio")
 @ToString(callSuper = true)
-public class Portfolio extends BaseEntity{
+public class Portfolio extends BaseEntity {
 
     @Column(unique = true)
     private String name;
     private String description;
     private String account;
+
+    @OneToMany
+    @ToString.Exclude
+    private List<Position> positions;
 
     @Override
     public boolean equals(Object o) {
