@@ -1,7 +1,9 @@
 package com.portfolio.manager.service;
 
+import com.portfolio.manager.domain.Order;
 import com.portfolio.manager.domain.Position;
 import com.portfolio.manager.dto.OrderDTO;
+import com.portfolio.manager.repository.OrderRepo;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -17,12 +19,15 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Service
-public class OrderServiceImpl implements OrderService{
+public class OrderServiceImpl implements OrderService {
     @Resource
     private PriceService priceService;
 
     @Resource
     private SecurityService securityService;
+
+    @Resource
+    private OrderRepo orderRepo;
 
     @Override
     public List<OrderDTO> buySplitEven(Set<String> securityCodes, double toSellMarketValue, double cash, List<Position> holdings) {
@@ -62,5 +67,16 @@ public class OrderServiceImpl implements OrderService{
     @Override
     public List<OrderDTO> sell(List<Position> toSell) {
         return toSell.stream().map(position -> new OrderDTO("卖", position.getSecurityShare(), securityService.getSecurityName(position.getSecurityCode()), position.getSecurityCode(), BigDecimal.valueOf(priceService.getLatestPrice(position.getSecurityCode()).getPrice()).multiply(BigDecimal.valueOf(position.getSecurityShare())).doubleValue())).toList();
+    }
+
+    @Override
+    public void addOrder(OrderDTO orderDTO, String portfolio) {
+        Order order = new Order();
+        order.setPlannedShare(orderDTO.share());
+        order.setRemainingShare(orderDTO.share());
+        order.setSecurityCode(orderDTO.securityCode().split("\\.")[0]);
+        order.setPortfolioName(portfolio);
+        order.setBuyOrSell(orderDTO.buyOrSell());
+        orderRepo.save(order);
     }
 }

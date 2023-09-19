@@ -50,9 +50,10 @@ public class PositionController {
     public void addOrders(@RequestBody OrderPlacementDTO orderPlacement){
         log.info("{}", orderPlacement);
         orderPlacement.orders().stream().parallel().forEach(orderDTO -> {
-            String code = orderDTO.securityCode().split("\\.")[0];
-            BidAskDTO bidAskDTO = bidAskService.getSell1(code);
-            log.info("code: {}, bidAsk: {}", code, bidAskDTO);
+//            String code = orderDTO.securityCode().split("\\.")[0];
+//            BidAskDTO bidAskDTO = bidAskService.getSell1(code);
+            orderService.addOrder(orderDTO, orderPlacement.portfolio());
+//            log.info("code: {}, bidAsk: {}", code, bidAskDTO);
         });
     }
 }

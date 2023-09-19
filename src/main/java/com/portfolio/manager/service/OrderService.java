@@ -12,4 +12,6 @@ public interface OrderService {
 
     //Estimation
     List<OrderDTO> sell(List<Position> toSell);
+
+    void addOrder(OrderDTO orderDTO, String portfolio);
 }
