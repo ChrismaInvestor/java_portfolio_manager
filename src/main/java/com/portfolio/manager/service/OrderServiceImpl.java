@@ -3,6 +3,7 @@ package com.portfolio.manager.service;
 import com.portfolio.manager.domain.Order;
 import com.portfolio.manager.domain.Position;
 import com.portfolio.manager.dto.OrderDTO;
+import com.portfolio.manager.dto.OrderInProgressDTO;
 import com.portfolio.manager.repository.OrderRepo;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -78,5 +79,15 @@ public class OrderServiceImpl implements OrderService {
         order.setPortfolioName(portfolio);
         order.setBuyOrSell(orderDTO.buyOrSell());
         orderRepo.save(order);
+    }
+
+    @Override
+    public List<OrderInProgressDTO> listOrders(String portfolio) {
+        List<Order> rawOrders = orderRepo.findByPortfolioName(portfolio).stream().filter(order -> order.getRemainingShare() > 0L).toList();
+return rawOrders.stream().map(rawOrder ->{
+    BigDecimal plannedShare = BigDecimal.valueOf(rawOrder.getPlannedShare());
+    Double ratio = BigDecimal.valueOf(rawOrder.getPlannedShare()-rawOrder.getRemainingShare()).divide(plannedShare, RoundingMode.FLOOR).doubleValue();
+    return new OrderInProgressDTO(rawOrder.getBuyOrSell(),securityService.getSecurityName(rawOrder.getSecurityCode()) ,rawOrder.getSecurityCode(),ratio);
+}).toList();
     }
 }
