@@ -1,5 +1,6 @@
 package com.portfolio.manager.service;
 
+import com.portfolio.manager.domain.Order;
 import com.portfolio.manager.domain.Position;
 import com.portfolio.manager.dto.OrderDTO;
 import com.portfolio.manager.dto.OrderInProgressDTO;
@@ -16,5 +17,7 @@ public interface OrderService {
 
     void addOrder(OrderDTO orderDTO, String portfolio);
 
-    List<OrderInProgressDTO> listOrders(String portfolio);
+    List<OrderInProgressDTO> listOrdersInProgress(String portfolio);
+
+    List<Order> listOrders(String portfolio);
 }

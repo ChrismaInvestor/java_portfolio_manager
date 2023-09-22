@@ -1,10 +1,8 @@
 package com.portfolio.manager.web;
 
 import com.portfolio.manager.domain.Dynamics;
-import com.portfolio.manager.domain.Portfolio;
 import com.portfolio.manager.dto.PortfolioDTO;
 import com.portfolio.manager.repository.DynamicsRepo;
-import com.portfolio.manager.repository.PortfolioRepo;
 import com.portfolio.manager.service.PortfolioService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;

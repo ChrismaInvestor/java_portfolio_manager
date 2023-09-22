@@ -11,10 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -82,12 +79,17 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public List<OrderInProgressDTO> listOrders(String portfolio) {
+    public List<OrderInProgressDTO> listOrdersInProgress(String portfolio) {
         List<Order> rawOrders = orderRepo.findByPortfolioName(portfolio).stream().filter(order -> order.getRemainingShare() > 0L).toList();
-return rawOrders.stream().map(rawOrder ->{
-    BigDecimal plannedShare = BigDecimal.valueOf(rawOrder.getPlannedShare());
-    Double ratio = BigDecimal.valueOf(rawOrder.getPlannedShare()-rawOrder.getRemainingShare()).divide(plannedShare, RoundingMode.FLOOR).doubleValue();
-    return new OrderInProgressDTO(rawOrder.getBuyOrSell(),securityService.getSecurityName(rawOrder.getSecurityCode()) ,rawOrder.getSecurityCode(),ratio);
-}).toList();
+        return rawOrders.stream().map(rawOrder -> {
+            BigDecimal plannedShare = BigDecimal.valueOf(rawOrder.getPlannedShare());
+            int ratio = BigDecimal.valueOf(rawOrder.getPlannedShare() - rawOrder.getRemainingShare()).divide(plannedShare, RoundingMode.FLOOR).multiply(BigDecimal.valueOf(100L)).intValue();
+            return new OrderInProgressDTO(rawOrder.getBuyOrSell(), securityService.getSecurityName(rawOrder.getSecurityCode()), rawOrder.getSecurityCode(), ratio);
+        }).toList();
+    }
+
+    @Override
+    public List<Order> listOrders(String portfolio) {
+        return null;
     }
 }

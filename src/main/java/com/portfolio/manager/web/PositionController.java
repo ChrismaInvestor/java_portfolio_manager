@@ -1,6 +1,5 @@
 package com.portfolio.manager.web;
 
-import com.portfolio.manager.domain.Order;
 import com.portfolio.manager.domain.Position;
 import com.portfolio.manager.dto.*;
 import com.portfolio.manager.integration.BidAskService;
@@ -61,6 +60,6 @@ public class PositionController {
     @GetMapping("order")
     public List<OrderInProgressDTO> listOrders(@RequestParam(name = "currentPortfolio") String portfolio){
         log.info("Test order...");
-        return orderService.listOrders(portfolio);
+        return orderService.listOrdersInProgress(portfolio);
     }
 }
