@@ -22,4 +22,7 @@ public class SubOrder extends BaseEntity {
 
     LocalDateTime startTime;
     LocalDateTime endTime;
+    private String buyOrSell;
+    @Column(length = 6)
+    private String securityCode;
 }

@@ -2,6 +2,7 @@ package com.portfolio.manager.service;
 
 import com.portfolio.manager.domain.Order;
 import com.portfolio.manager.domain.SubOrder;
+import com.portfolio.manager.integration.BidAskService;
 import com.portfolio.manager.repository.SubOrderRepo;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +22,9 @@ import java.util.List;
 public class AlgoServiceImpl implements AlgoService {
     @Resource
     SubOrderRepo subOrderRepo;
+
+    @Resource
+    BidAskService bidAskService;
 
     @Override
     public List<SubOrder> testSplitOrders(Order order, LocalDateTime startTime) {
