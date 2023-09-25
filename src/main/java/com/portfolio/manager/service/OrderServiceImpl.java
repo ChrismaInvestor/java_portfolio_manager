@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -26,6 +27,9 @@ public class OrderServiceImpl implements OrderService {
 
     @Resource
     private OrderRepo orderRepo;
+
+    @Resource
+    private AlgoService algoService;
 
     @Override
     public List<OrderDTO> buySplitEven(Set<String> securityCodes, double toSellMarketValue, double cash, List<Position> holdings) {
@@ -75,6 +79,7 @@ public class OrderServiceImpl implements OrderService {
         order.setSecurityCode(orderDTO.securityCode().split("\\.")[0]);
         order.setPortfolioName(portfolio);
         order.setBuyOrSell(orderDTO.buyOrSell());
+        order.setSubOrders(algoService.testSplitOrders(order, LocalDateTime.now()));
         orderRepo.save(order);
     }
 
@@ -90,6 +95,6 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public List<Order> listOrders(String portfolio) {
-        return null;
+        return orderRepo.findByPortfolioName(portfolio).stream().filter(order -> order.getRemainingShare() > 0L).toList();
     }
 }

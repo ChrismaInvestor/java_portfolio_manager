@@ -1,9 +1,13 @@
 package com.portfolio.manager.service;
 
 import com.portfolio.manager.domain.Order;
+import com.portfolio.manager.domain.SubOrder;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface AlgoService {
-    void testSplitOrders(List<Order> orders);
+    List<SubOrder> testSplitOrders(Order order, LocalDateTime startTime);
+
+    void execute(SubOrder order);
 }
