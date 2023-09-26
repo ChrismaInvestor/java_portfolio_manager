@@ -3,6 +3,7 @@ package com.portfolio.manager.domain;
 import com.portfolio.manager.domain.base.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.OneToMany;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -25,8 +26,7 @@ public class Portfolio extends BaseEntity {
     private String description;
     private String account;
 
-    @OneToMany
-    @ToString.Exclude
+    @OneToMany(fetch = FetchType.EAGER)
     private List<Position> positions;
 
     @Override

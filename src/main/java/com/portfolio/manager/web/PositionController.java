@@ -27,9 +27,6 @@ public class PositionController {
     @Resource
     OrderService orderService;
 
-    @Resource
-    BidAskService bidAskService;
-
     @PostMapping
     public List<OrderDTO> addPosition(@RequestBody PositionDTO positionDTO) {
         List<Position> oldPositions = portfolioService.listPosition(positionDTO.portfolio());
@@ -47,19 +44,13 @@ public class PositionController {
     }
 
     @PostMapping("order")
-    public void addOrders(@RequestBody OrderPlacementDTO orderPlacement){
+    public void addOrders(@RequestBody OrderPlacementDTO orderPlacement) {
         log.info("{}", orderPlacement);
-        orderPlacement.orders().stream().parallel().forEach(orderDTO -> {
-//            String code = orderDTO.securityCode().split("\\.")[0];
-//            BidAskDTO bidAskDTO = bidAskService.getSell1(code);
-            orderService.addOrder(orderDTO, orderPlacement.portfolio());
-//            log.info("code: {}, bidAsk: {}", code, bidAskDTO);
-        });
+        orderPlacement.orders().stream().parallel().forEach(orderDTO -> orderService.addOrder(orderDTO, orderPlacement.portfolio()));
     }
 
     @GetMapping("order")
-    public List<OrderInProgressDTO> listOrders(@RequestParam(name = "currentPortfolio") String portfolio){
-        log.info("Test order...");
+    public List<OrderInProgressDTO> listOrders(@RequestParam(name = "currentPortfolio") String portfolio) {
         return orderService.listOrdersInProgress(portfolio);
     }
 }

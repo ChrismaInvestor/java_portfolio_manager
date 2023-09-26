@@ -18,7 +18,19 @@ public class BidAskServiceImpl implements BidAskService {
     public BidAskDTO getSell1(String securityCode) {
         ResponseEntity<BidAskDTO> bidAsk;
         try {
-            bidAsk = restTemplate.exchange("http://localhost:5000/bidAsk/{code}", HttpMethod.GET, null, BidAskDTO.class, securityCode);
+            bidAsk = restTemplate.exchange("http://localhost:5000/bidAsk/buy/{code}", HttpMethod.GET, null, BidAskDTO.class, securityCode);
+            return bidAsk.getBody();
+        } catch (Exception e) {
+            log.error("Bid ask query: {}", e.getMessage());
+        }
+        return null;
+    }
+
+    @Override
+    public BidAskDTO getBuy1(String securityCode) {
+        ResponseEntity<BidAskDTO> bidAsk;
+        try {
+            bidAsk = restTemplate.exchange("http://localhost:5000/bidAsk/sell/{code}", HttpMethod.GET, null, BidAskDTO.class, securityCode);
             return bidAsk.getBody();
         } catch (Exception e) {
             log.error("Bid ask query: {}", e.getMessage());

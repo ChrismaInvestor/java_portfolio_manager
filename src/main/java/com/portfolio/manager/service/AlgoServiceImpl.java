@@ -2,8 +2,11 @@ package com.portfolio.manager.service;
 
 import com.portfolio.manager.domain.Order;
 import com.portfolio.manager.domain.SubOrder;
+import com.portfolio.manager.domain.Trade;
+import com.portfolio.manager.dto.BidAskDTO;
 import com.portfolio.manager.integration.BidAskService;
 import com.portfolio.manager.repository.SubOrderRepo;
+import com.portfolio.manager.repository.TradeRepo;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -26,6 +29,9 @@ public class AlgoServiceImpl implements AlgoService {
     @Resource
     BidAskService bidAskService;
 
+    @Resource
+    TradeRepo tradeRepo;
+
     @Override
     public List<SubOrder> testSplitOrders(Order order, LocalDateTime startTime) {
 
@@ -41,6 +47,8 @@ public class AlgoServiceImpl implements AlgoService {
         for (int i = 0; i < subOrders.size(); i++) {
             subOrders.get(i).setStartTime(startTime.plusMinutes(i));
             subOrders.get(i).setEndTime(startTime.plusMinutes(i + 1));
+            subOrders.get(i).setBuyOrSell(order.getBuyOrSell());
+            subOrders.get(i).setSecurityCode(order.getSecurityCode());
         }
         log.info("Code: {}, Suborders: {}", order.getSecurityCode(), subOrders);
         subOrderRepo.saveAll(subOrders);
@@ -49,7 +57,30 @@ public class AlgoServiceImpl implements AlgoService {
 
     @Override
     public void execute(SubOrder order) {
+        Trade trade = new Trade();
+        trade.setCode(order.getSecurityCode());
+        trade.setDirection(order.getBuyOrSell());
+        if (order.getBuyOrSell().equals("买入")) {
+            BidAskDTO bidAskDTO = bidAskService.getSell1(order.getSecurityCode());
+            trade.setPrice(bidAskDTO.price());
+            if (Long.parseLong(bidAskDTO.volume()) >= order.getPlannedShare()) {
+                trade.setVolume(order.getPlannedShare());
+            } else {
+                trade.setVolume(Long.parseLong(bidAskDTO.volume()));
+            }
 
+        } else {
+            BidAskDTO bidAskDTO = bidAskService.getBuy1(order.getSecurityCode());
+            trade.setPrice(bidAskDTO.price());
+            if (Long.parseLong(bidAskDTO.volume()) >= order.getPlannedShare()) {
+                trade.setVolume(order.getPlannedShare());
+            } else {
+                trade.setVolume(Long.parseLong(bidAskDTO.volume()));
+            }
+        }
+        order.setRemainingShare(order.getPlannedShare() - trade.getVolume());
+        tradeRepo.save(trade);
+        subOrderRepo.save(order);
     }
 
     private void splitEven(List<SubOrder> subOrders, Long remainingAmount, Long remainingMinutes) {
