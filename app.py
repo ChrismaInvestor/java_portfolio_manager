@@ -4,9 +4,8 @@ import json
 
 app = Flask(__name__)
 
-
 @app.route('/bidAsk/buy/<code>',methods=['GET'])
-def home(code):
+def buy(code):
     stock_bid_ask = ak.stock_bid_ask_em(
                 code)
     stock_bid_ask_sell1=stock_bid_ask[stock_bid_ask['item'].str.startswith('sell_1')]
@@ -17,13 +16,10 @@ def home(code):
             price = row['value']
         if(row['item']== 'sell_1_vol'):
             volume = row['value']
-    #return stock_bid_ask
     return {'price': price, 'volume': volume}
-    # return json.dumps({'price': price,
-    #                    'volume': volume})
 
 @app.route('/bidAsk/sell/<code>',methods=['GET'])
-def home(code):
+def sell(code):
     stock_bid_ask = ak.stock_bid_ask_em(
                 code)
     stock_bid_ask_buy1=stock_bid_ask[stock_bid_ask['item'].str.startswith('buy_1')]
@@ -34,7 +30,6 @@ def home(code):
             price = row['value']
         if(row['item']== 'buy_1_vol'):
             volume = row['value']
-    #return stock_bid_ask
     return {'price': price, 'volume': volume}
 
 if __name__=='__main__':
