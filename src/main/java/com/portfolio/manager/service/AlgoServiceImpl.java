@@ -35,8 +35,9 @@ public class AlgoServiceImpl implements AlgoService {
     @Override
     public List<SubOrder> testSplitOrders(Order order, LocalDateTime startTime) {
 
-        LocalDateTime endTime = startTime.plusHours(1L);
-        LocalDateTime halfCourtTime = LocalDateTime.of(LocalDate.now(), LocalTime.of(11, 3));
+        LocalDateTime endTime = startTime.plusMinutes(10L);
+//        LocalDateTime endTime = startTime.plusHours(1L);
+        LocalDateTime halfCourtTime = LocalDateTime.of(LocalDate.now(), LocalTime.of(11, 29));
 //        if (endTime.isAfter(halfCourtTime)) {
 //            endTime = halfCourtTime;
 //        }
@@ -56,29 +57,31 @@ public class AlgoServiceImpl implements AlgoService {
     }
 
     @Override
-    public void execute(SubOrder order) {
+    public void execute(SubOrder order, Long orderId) {
         Trade trade = new Trade();
         trade.setCode(order.getSecurityCode());
         trade.setDirection(order.getBuyOrSell());
+        trade.setOrderId(orderId);
         if (order.getBuyOrSell().equals("买入")) {
             BidAskDTO bidAskDTO = bidAskService.getSell1(order.getSecurityCode());
             trade.setPrice(bidAskDTO.price());
-            if (Long.parseLong(bidAskDTO.volume()) >= order.getPlannedShare()) {
-                trade.setVolume(order.getPlannedShare());
+
+            if (bidAskDTO.volume().longValue() >= order.getRemainingShare()) {
+                trade.setVolume(order.getRemainingShare());
             } else {
-                trade.setVolume(Long.parseLong(bidAskDTO.volume()));
+                trade.setVolume(bidAskDTO.volume().longValue());
             }
 
         } else {
             BidAskDTO bidAskDTO = bidAskService.getBuy1(order.getSecurityCode());
             trade.setPrice(bidAskDTO.price());
-            if (Long.parseLong(bidAskDTO.volume()) >= order.getPlannedShare()) {
-                trade.setVolume(order.getPlannedShare());
+            if (bidAskDTO.volume().longValue() >= order.getRemainingShare()) {
+                trade.setVolume(order.getRemainingShare());
             } else {
-                trade.setVolume(Long.parseLong(bidAskDTO.volume()));
+                trade.setVolume(bidAskDTO.volume().longValue());
             }
         }
-        order.setRemainingShare(order.getPlannedShare() - trade.getVolume());
+        order.setRemainingShare(order.getRemainingShare() - trade.getVolume());
         tradeRepo.save(trade);
         subOrderRepo.save(order);
     }

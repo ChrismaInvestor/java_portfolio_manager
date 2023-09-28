@@ -17,6 +17,8 @@ public interface PortfolioService {
 
     void addPortfolio(PortfolioDTO portfolioDTO);
 
+    void appendPositions(PortfolioDTO portfolioDTO, List<Position> positions);
+
 //    //Estimation
 //    List<OrderDTO> buySplitEven(Set<String> securityCodes, double toSellMarketValue, double cash, List<Position> holdings);
 //

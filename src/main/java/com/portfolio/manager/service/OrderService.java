@@ -20,4 +20,6 @@ public interface OrderService {
     List<OrderInProgressDTO> listOrdersInProgress(String portfolio);
 
     List<Order> listOrders(String portfolio);
+
+    Double getCost(Long subOrderId);
 }

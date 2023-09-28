@@ -25,6 +25,8 @@ public class Trade {
     @Column(updatable = false)
     private LocalDateTime createTime;
 
+    private Long orderId;
+
     @NotNull
     @Pattern(regexp = "[0-9]{6}")
     @Column(length = 6)

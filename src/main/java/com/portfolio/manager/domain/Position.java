@@ -18,4 +18,6 @@ public class Position extends BaseEntity {
     private String securityCode;
 
     private Long securityShare;
+
+    private Double cost;
 }

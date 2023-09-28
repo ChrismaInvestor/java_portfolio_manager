@@ -5,6 +5,7 @@ import com.portfolio.manager.domain.Position;
 import com.portfolio.manager.dto.OrderDTO;
 import com.portfolio.manager.dto.OrderInProgressDTO;
 import com.portfolio.manager.repository.OrderRepo;
+import com.portfolio.manager.repository.TradeRepo;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -30,6 +31,9 @@ public class OrderServiceImpl implements OrderService {
 
     @Resource
     private AlgoService algoService;
+
+    @Resource
+    private TradeRepo tradeRepo;
 
     @Override
     public List<OrderDTO> buySplitEven(Set<String> securityCodes, double toSellMarketValue, double cash, List<Position> holdings) {
@@ -79,7 +83,8 @@ public class OrderServiceImpl implements OrderService {
         order.setSecurityCode(orderDTO.securityCode().split("\\.")[0]);
         order.setPortfolioName(portfolio);
         order.setBuyOrSell(orderDTO.buyOrSell());
-        order.setSubOrders(algoService.testSplitOrders(order, LocalDateTime.now()));
+        LocalDateTime time = LocalDateTime.now().plusMinutes(1L);
+        order.setSubOrders(algoService.testSplitOrders(order, time.minusSeconds(time.getSecond())));
         orderRepo.save(order);
     }
 
@@ -88,7 +93,7 @@ public class OrderServiceImpl implements OrderService {
         List<Order> rawOrders = orderRepo.findByPortfolioName(portfolio).stream().filter(order -> order.getRemainingShare() > 0L).toList();
         return rawOrders.stream().map(rawOrder -> {
             BigDecimal plannedShare = BigDecimal.valueOf(rawOrder.getPlannedShare());
-            int ratio = BigDecimal.valueOf(rawOrder.getPlannedShare() - rawOrder.getRemainingShare()).divide(plannedShare, RoundingMode.FLOOR).multiply(BigDecimal.valueOf(100L)).intValue();
+            int ratio = BigDecimal.valueOf(rawOrder.getPlannedShare() - rawOrder.getRemainingShare()).divide(plannedShare, 4, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100L)).intValue();
             return new OrderInProgressDTO(rawOrder.getBuyOrSell(), securityService.getSecurityName(rawOrder.getSecurityCode()), rawOrder.getSecurityCode(), ratio);
         }).toList();
     }
@@ -96,5 +101,12 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public List<Order> listOrders(String portfolio) {
         return orderRepo.findByPortfolioName(portfolio).stream().filter(order -> order.getRemainingShare() > 0L).toList();
+    }
+
+    @Override
+    public Double getCost(Long orderId) {
+        return tradeRepo.findByOrderId(orderId).stream().mapToDouble(trade ->
+                BigDecimal.valueOf(trade.getPrice()).multiply(BigDecimal.valueOf(trade.getVolume())).setScale(2, RoundingMode.HALF_DOWN).doubleValue()
+        ).sum();
     }
 }
