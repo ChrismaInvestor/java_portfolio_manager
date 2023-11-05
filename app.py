@@ -1,8 +1,11 @@
 from flask import Flask, request
 import akshare as ak
-import json
 
 app = Flask(__name__)
+
+def post_security(code, name, session):
+    url = "http://localhost:8080/security"
+    session.post(url=url, json={"code": code, "name": name})
 
 @app.route('/bidAsk/buy/<code>',methods=['GET'])
 def buy(code):
@@ -31,6 +34,17 @@ def sell(code):
         if(row['item']== 'buy_1_vol'):
             volume = row['value']
     return {'price': price, 'volume': volume}
+
+
+@app.route('/stocks', methods=['GET'])
+def listStocks():
+    stock_list_df = ak.stock_info_a_code_name()
+    ans = []
+    for index, row in stock_list_df.iterrows():
+        # post_security(row['code'], row['name'], s)
+        ans.append({"code":row['code'], "name":row['name']})
+
+    return ans
 
 if __name__=='__main__':
     app.run(debug=True)
