@@ -1,7 +1,6 @@
 package com.portfolio.manager.web;
 
 import com.portfolio.manager.domain.Security;
-import com.portfolio.manager.dto.SecurityDTO;
 import com.portfolio.manager.integration.MarketDataService;
 import com.portfolio.manager.service.PriceService;
 import com.portfolio.manager.service.SecurityService;

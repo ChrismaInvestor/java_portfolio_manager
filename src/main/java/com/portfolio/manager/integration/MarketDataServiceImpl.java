@@ -1,6 +1,5 @@
 package com.portfolio.manager.integration;
 
-import com.portfolio.manager.dto.BidAskDTO;
 import com.portfolio.manager.dto.SecurityDTO;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -10,7 +9,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
