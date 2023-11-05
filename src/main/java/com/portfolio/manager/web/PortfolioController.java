@@ -34,7 +34,6 @@ public class PortfolioController {
 
     @GetMapping("dynamics")
     public Dynamics getDynamics(@RequestParam(name = "currentPortfolio") String portfolio) {
-        log.info("Portfolio: {}", portfolio);
         return dynamicsRepo.findByPortfolioName(portfolio);
     }
 

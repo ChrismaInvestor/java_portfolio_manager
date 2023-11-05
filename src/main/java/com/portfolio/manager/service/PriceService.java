@@ -10,4 +10,6 @@ public interface PriceService {
     void addPrice(List<Price> prices);
 
     void checkIntegrityOfMinutePrices();
+
+    void deletePricesMoreThan30Days();
 }

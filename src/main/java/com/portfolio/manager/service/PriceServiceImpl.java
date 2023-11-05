@@ -9,8 +9,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.LocalDate;
-import java.time.LocalTime;
+import java.time.*;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -48,9 +47,25 @@ public class PriceServiceImpl implements PriceService {
             ));
             prices.forEach((key, value) -> {
                 LocalTime time = value.get(0).getTime().toLocalTime();
-                if (time.isAfter(LocalTime.of(10,0,0))){
+                if (time.isAfter(LocalTime.of(10, 0, 0))) {
                     log.error("date: {}, security: {}, start time: {}", key, security.getCode(), time);
                     priceRepo.deleteAll(value);
+                }
+            });
+        });
+    }
+
+    @Override
+    public void deletePricesMoreThan30Days() {
+        final LocalDateTime now = LocalDateTime.now();
+        securityRepo.findAll().stream().parallel().forEach(security -> {
+            Map<LocalDate, List<Price>> prices = priceRepo.findAllByCode(security.getCode()).stream().collect(Collectors.groupingBy(
+                    price -> price.getTime().toLocalDate()
+            ));
+            prices.forEach((k, v) -> {
+                log.info("current date: {}", k);
+                if (Duration.between(LocalDateTime.of(k, LocalTime.now()),now).toDays() > 30) {
+                    priceRepo.deleteAllInBatch(v);
                 }
             });
         });

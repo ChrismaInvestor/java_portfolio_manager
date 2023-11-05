@@ -11,4 +11,5 @@ public interface PriceRepo extends JpaRepository<Price, Long> {
     List<Price> findAllByCode(String code);
 
     Price findTopByCodeOrderByTimeDesc(String code);
+
 }
