@@ -3,10 +3,6 @@ import akshare as ak
 
 app = Flask(__name__)
 
-def post_security(code, name, session):
-    url = "http://localhost:8080/security"
-    session.post(url=url, json={"code": code, "name": name})
-
 @app.route('/bidAsk/buy/<code>',methods=['GET'])
 def buy(code):
     stock_bid_ask = ak.stock_bid_ask_em(
@@ -41,10 +37,29 @@ def listStocks():
     stock_list_df = ak.stock_info_a_code_name()
     ans = []
     for index, row in stock_list_df.iterrows():
-        # post_security(row['code'], row['name'], s)
         ans.append({"code":row['code'], "name":row['name']})
 
     return ans
+
+@app.route('/minPrice/<code>', methods=['GET'])
+def listMinPrices(code):
+    stock_zh_a_minute_df = ak.stock_zh_a_minute(
+        symbol=combineCode(code), period='1', adjust="qfq").dropna()
+    ans = []
+    for index, row in stock_zh_a_minute_df.iterrows():
+        ans.append({"code": code[-6:], "price": row['close'],"volume": row['volume'], "time": row['day']})  
+    return ans
+
+def combineCode(code):
+    if (code.startswith("688")):
+        return "sh" + code
+    if (code.startswith("0") | code.startswith("3")):
+        return "sz" + code
+    if (code.startswith("6")):
+        return "sh" + code
+    if (code.startswith("4")|code.startswith("8")):
+        return "bj" + code
+    return code
 
 if __name__=='__main__':
     app.run(debug=True)
