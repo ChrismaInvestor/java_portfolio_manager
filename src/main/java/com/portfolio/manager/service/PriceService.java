@@ -11,5 +11,5 @@ public interface PriceService {
 
     void checkIntegrityOfMinutePrices();
 
-    void deletePricesMoreThan30Days();
+    long deletePricesMoreThan30Days();
 }

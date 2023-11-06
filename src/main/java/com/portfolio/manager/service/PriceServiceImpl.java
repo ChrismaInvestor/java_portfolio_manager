@@ -12,6 +12,7 @@ import java.math.RoundingMode;
 import java.time.*;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -56,18 +57,20 @@ public class PriceServiceImpl implements PriceService {
     }
 
     @Override
-    public void deletePricesMoreThan30Days() {
+    public long deletePricesMoreThan30Days() {
         final LocalDateTime now = LocalDateTime.now();
+        AtomicInteger count = new AtomicInteger(0);
         securityRepo.findAll().stream().parallel().forEach(security -> {
             Map<LocalDate, List<Price>> prices = priceRepo.findAllByCode(security.getCode()).stream().collect(Collectors.groupingBy(
                     price -> price.getTime().toLocalDate()
             ));
             prices.forEach((k, v) -> {
-                log.info("current date: {}", k);
                 if (Duration.between(LocalDateTime.of(k, LocalTime.now()),now).toDays() > 30) {
                     priceRepo.deleteAllInBatch(v);
+                    count.addAndGet(v.size());
                 }
             });
         });
+        return count.get();
     }
 }

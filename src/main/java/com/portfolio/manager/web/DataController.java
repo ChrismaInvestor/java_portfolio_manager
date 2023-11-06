@@ -1,5 +1,6 @@
 package com.portfolio.manager.web;
 
+import com.portfolio.manager.domain.Price;
 import com.portfolio.manager.domain.Security;
 import com.portfolio.manager.integration.MarketDataService;
 import com.portfolio.manager.service.PriceService;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
@@ -41,7 +43,6 @@ public class DataController {
                 security.setCode(v.code());
                 security.setName(v.name());
                 count.incrementAndGet();
-                log.info("security: {}", security);
                 securityService.addSecurity(security);
             }
         });
@@ -54,11 +55,19 @@ public class DataController {
     }
 
     @GetMapping("minPrice")
-    public void syncMinPrice() {
+    public Map<String, String> syncMinPrice() {
         //删除过期数据
-        priceService.deletePricesMoreThan30Days();
+        long deletionCount = priceService.deletePricesMoreThan30Days();
+
+        AtomicInteger addCount = new AtomicInteger(0);
         //新增新数据
-//        securityService.listExistingStocks()
-//        return Map.of("data", String.format("共新增%s条分时记录, 共删除%s条分时记录 更新时间%s", count.get(), LocalDateTime.now()));
+        securityService.listExistingStocks().stream().limit(25).parallel().forEach(s -> {
+                    List<Price> minPrices = marketDataService.listMinPrice(s.getCode());
+                    priceService.addPrice(minPrices);
+                    addCount.addAndGet(minPrices.size());
+                }
+        );
+
+        return Map.of("data", String.format("当前分时记录起始日期%s, 结束日期%s条 更新时间%s", deletionCount,addCount.get(), LocalDateTime.now()));
     }
 }
