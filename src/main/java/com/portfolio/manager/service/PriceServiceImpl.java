@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.sql.SQLException;
 import java.time.*;
 import java.util.List;
 import java.util.Map;
@@ -36,7 +37,16 @@ public class PriceServiceImpl implements PriceService {
             bdPrice = bdPrice.setScale(2, RoundingMode.FLOOR);
             price.setPrice(bdPrice.doubleValue());
         });
-        priceRepo.saveAll(prices);
+        Map<LocalDate, List<Price>> pricesMap = prices.stream().collect(Collectors.groupingBy(
+                price -> price.getTime().toLocalDate()
+        ));
+        pricesMap.values().stream().parallel().forEach(pricesToSave -> {
+            try {
+                priceRepo.saveAll(pricesToSave);
+            } catch (Exception e) {
+                log.warn("same record");
+            }
+        });
 
     }
 
@@ -65,7 +75,7 @@ public class PriceServiceImpl implements PriceService {
                     price -> price.getTime().toLocalDate()
             ));
             prices.forEach((k, v) -> {
-                if (Duration.between(LocalDateTime.of(k, LocalTime.now()),now).toDays() > 30) {
+                if (Duration.between(LocalDateTime.of(k, LocalTime.now()), now).toDays() > 30) {
                     priceRepo.deleteAllInBatch(v);
                     count.addAndGet(v.size());
                 }

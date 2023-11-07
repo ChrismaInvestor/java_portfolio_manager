@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -60,14 +61,21 @@ public class DataController {
         long deletionCount = priceService.deletePricesMoreThan30Days();
 
         AtomicInteger addCount = new AtomicInteger(0);
+
+        ForkJoinPool customThreadPool = new ForkJoinPool(4);
         //新增新数据
-        securityService.listExistingStocks().stream().limit(25).parallel().forEach(s -> {
+        customThreadPool.submit(() -> securityService.listExistingStocks().parallelStream().forEach(s -> {
                     List<Price> minPrices = marketDataService.listMinPrice(s.getCode());
                     priceService.addPrice(minPrices);
                     addCount.addAndGet(minPrices.size());
+                    try {
+                        Thread.sleep(100);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
                 }
-        );
+        ));
 
-        return Map.of("data", String.format("当前分时记录起始日期%s, 结束日期%s条 更新时间%s", deletionCount,addCount.get(), LocalDateTime.now()));
+        return Map.of("data", String.format("当前分时记录起始日期%s, 结束日期%s条 更新时间%s", deletionCount, addCount.get(), LocalDateTime.now()));
     }
 }
