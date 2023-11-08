@@ -34,12 +34,12 @@ public class PriceServiceImpl implements PriceService {
 
     @Override
     public void addPrice(List<Price> prices) {
-        prices.forEach(price -> {
+        prices.stream().parallel().forEach(price -> {
             BigDecimal bdPrice = BigDecimal.valueOf(price.getPrice());
             bdPrice = bdPrice.setScale(2, RoundingMode.FLOOR);
             price.setPrice(bdPrice.doubleValue());
         });
-        Map<LocalDate, List<Price>> pricesMap = prices.stream().collect(Collectors.groupingBy(
+        Map<LocalDate, List<Price>> pricesMap = prices.stream().parallel().collect(Collectors.groupingBy(
                 price -> price.getTime().toLocalDate()
         ));
         pricesMap.values().stream().parallel().forEach(pricesToSave -> {
@@ -73,13 +73,13 @@ public class PriceServiceImpl implements PriceService {
         final LocalDateTime now = LocalDateTime.now();
         AtomicInteger count = new AtomicInteger(0);
         securityRepo.findAll().stream().parallel().forEach(security -> {
-            Map<LocalDate, List<Price>> prices = priceRepo.findAllByCode(security.getCode()).stream().collect(Collectors.groupingBy(
+            Map<LocalDate, List<Price>> prices = priceRepo.findAllByCode(security.getCode()).stream().parallel().collect(Collectors.groupingBy(
                     price -> price.getTime().toLocalDate()
             ));
-            prices.forEach((k, v) -> {
-                if (Duration.between(LocalDateTime.of(k, LocalTime.now()), now).toDays() > 30) {
-                    priceRepo.deleteAllInBatch(v);
-                    count.addAndGet(v.size());
+            prices.entrySet().stream().parallel().forEach(entry -> {
+                if (Duration.between(LocalDateTime.of(entry.getKey(), LocalTime.now()), now).toDays() > 30) {
+                    priceRepo.deleteAllInBatch(entry.getValue());
+                    count.addAndGet(entry.getValue().size());
                 }
             });
         });

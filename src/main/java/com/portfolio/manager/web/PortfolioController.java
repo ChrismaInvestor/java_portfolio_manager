@@ -41,6 +41,7 @@ public class PortfolioController {
     public Portfolio getPortfolio(@RequestParam(name = "currentPortfolio") String portfolio) {
         return portfolioRepo.findByName(portfolio);
     }
+
     @PostMapping
     public void addPortfolio(@RequestBody PortfolioDTO portfolioDTO) {
         portfolioService.addPortfolio(portfolioDTO);
