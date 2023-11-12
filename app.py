@@ -1,7 +1,14 @@
-from flask import Flask, request
+from flask import Flask
 import akshare as ak
+from datetime import datetime
+import time
+from threading import Lock
 
 app = Flask(__name__)
+
+app.config['current_time'] = datetime.now()
+
+lock = Lock()
 
 @app.route('/bidAsk/buy/<code>',methods=['GET'])
 def buy(code):
@@ -43,11 +50,15 @@ def listStocks():
 
 @app.route('/minPrice/<code>', methods=['GET'])
 def listMinPrices(code):
+    while (datetime.now() - app.config['current_time']).total_seconds() <1.5:
+        time.sleep(1.5)
+    with lock:
+        app.config['current_time'] = datetime.now()
     stock_zh_a_minute_df = ak.stock_zh_a_minute(
         symbol=combineCode(code), period='1', adjust="qfq").dropna()
     ans = []
     for index, row in stock_zh_a_minute_df.iterrows():
-        ans.append({"code": code[-6:], "price": row['close'],"volume": row['volume'], "time": row['day']})  
+        ans.append({"code": code[-6:], "price": row['close'],"volume": row['volume'], "time": row['day']})
     return ans
 
 def combineCode(code):
