@@ -44,6 +44,7 @@ public class OrderServiceImpl implements OrderService {
         List<OrderDTO> orders = new ArrayList<>();
         Map<String, Position> holdingCodes = holdings.stream().collect(Collectors.toMap(Position::getSecurityCode, Function.identity()));
         securityCodes.forEach(code -> {
+            log.info("code: {}", code);
             String internalCode = code.split("\\.")[0];
             BigDecimal price = BigDecimal.valueOf(priceService.getLatestPrice(internalCode).getPrice());
             BigDecimal divide = average.divide(price.multiply(BigDecimal.valueOf(100L)), RoundingMode.HALF_EVEN);

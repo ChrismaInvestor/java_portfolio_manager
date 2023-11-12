@@ -32,6 +32,7 @@ public class PositionController {
         List<Position> oldPositions = portfolioService.listPosition(positionDTO.portfolio());
         Set<String> oldPositionCodes = oldPositions.stream().map(Position::getSecurityCode).collect(Collectors.toSet());
         Set<String> newPositionCodes = positionDTO.positions().stream().map(SecurityDTO::code).collect(Collectors.toSet());
+        log.info("codes: {}", newPositionCodes);
         Set<String> intersection = new HashSet<>(oldPositionCodes);
         intersection.retainAll(newPositionCodes);
         oldPositionCodes.removeAll(newPositionCodes);
