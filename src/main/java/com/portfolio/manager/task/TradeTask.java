@@ -5,8 +5,6 @@ import com.portfolio.manager.domain.Order;
 import com.portfolio.manager.domain.Position;
 import com.portfolio.manager.domain.SubOrder;
 import com.portfolio.manager.dto.BidAskBrokerDTO;
-import com.portfolio.manager.dto.BidAskDTO;
-import com.portfolio.manager.dto.OrderInProgressDTO;
 import com.portfolio.manager.integration.BidAskService;
 import com.portfolio.manager.repository.OrderRepo;
 import com.portfolio.manager.service.AlgoService;

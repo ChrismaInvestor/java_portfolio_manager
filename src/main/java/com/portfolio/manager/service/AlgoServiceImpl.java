@@ -3,9 +3,6 @@ package com.portfolio.manager.service;
 import com.portfolio.manager.domain.Order;
 import com.portfolio.manager.domain.SubOrder;
 import com.portfolio.manager.domain.Trade;
-import com.portfolio.manager.dto.BidAskBrokerDTO;
-import com.portfolio.manager.dto.BidAskDTO;
-import com.portfolio.manager.integration.BidAskService;
 import com.portfolio.manager.repository.SubOrderRepo;
 import com.portfolio.manager.repository.TradeRepo;
 import jakarta.annotation.Resource;
@@ -26,9 +23,6 @@ import java.util.List;
 public class AlgoServiceImpl implements AlgoService {
     @Resource
     SubOrderRepo subOrderRepo;
-
-    @Resource
-    BidAskService bidAskService;
 
     @Resource
     TradeRepo tradeRepo;

@@ -48,7 +48,7 @@ public class BidAskServiceImpl implements BidAskService {
     public List<BidAskBrokerDTO> getBidAsk(List<String> securityCodes) {
         ResponseEntity<List<Map>> bidAsk;
         try {
-            bidAsk = restTemplate.exchange("http://localhost:5000/bidAsk/{codes}", HttpMethod.GET, null, new ParameterizedTypeReference<List<Map>>() {
+            bidAsk = restTemplate.exchange("http://localhost:5000/bidAsk/{codes}", HttpMethod.GET, null, new ParameterizedTypeReference<>() {
             }, String.join(",", securityCodes));
             return Objects.requireNonNull(bidAsk.getBody()).stream().map(v->new BidAskBrokerDTO(v.get("securityCode").toString(), Double.parseDouble(v.get("askPrice1").toString()),Double.parseDouble(v.get("bidPrice1").toString()),Integer.parseInt(v.get("askVol1").toString()),Integer.parseInt(v.get("bidVol1").toString()))).toList();
         } catch (Exception e) {
