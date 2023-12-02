@@ -36,7 +36,8 @@ public class Trade {
     private Double price;
 
     @NotNull
-    private String direction;
+    @Enumerated(EnumType.STRING)
+    private Direction direction;
 
     @NotNull
     private Long volume;

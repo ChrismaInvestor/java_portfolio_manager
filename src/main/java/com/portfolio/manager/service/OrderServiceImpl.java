@@ -1,5 +1,6 @@
 package com.portfolio.manager.service;
 
+import com.portfolio.manager.domain.Direction;
 import com.portfolio.manager.domain.Order;
 import com.portfolio.manager.domain.Position;
 import com.portfolio.manager.dto.OrderDTO;
@@ -83,7 +84,7 @@ public class OrderServiceImpl implements OrderService {
         order.setRemainingShare(orderDTO.share());
         order.setSecurityCode(orderDTO.securityCode().split("\\.")[0]);
         order.setPortfolioName(portfolio);
-        order.setBuyOrSell(orderDTO.buyOrSell());
+        order.setBuyOrSell(Direction.valueOf(orderDTO.buyOrSell()));
         LocalDateTime time = LocalDateTime.now().plusMinutes(1L);
         order.setSubOrders(algoService.testSplitOrders(order, time.minusSeconds(time.getSecond())));
         orderRepo.save(order);
@@ -95,7 +96,7 @@ public class OrderServiceImpl implements OrderService {
         return rawOrders.stream().map(rawOrder -> {
             BigDecimal plannedShare = BigDecimal.valueOf(rawOrder.getPlannedShare());
             int ratio = BigDecimal.valueOf(rawOrder.getPlannedShare() - rawOrder.getRemainingShare()).divide(plannedShare, 4, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100L)).intValue();
-            return new OrderInProgressDTO(rawOrder.getBuyOrSell(), securityService.getSecurityName(rawOrder.getSecurityCode()), rawOrder.getSecurityCode(), ratio);
+            return new OrderInProgressDTO(rawOrder.getBuyOrSell().name(), securityService.getSecurityName(rawOrder.getSecurityCode()), rawOrder.getSecurityCode(), ratio);
         }).toList();
     }
 

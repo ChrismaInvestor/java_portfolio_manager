@@ -3,6 +3,7 @@ package com.portfolio.manager.service;
 import com.portfolio.manager.domain.Order;
 import com.portfolio.manager.domain.SubOrder;
 import com.portfolio.manager.domain.Trade;
+import com.portfolio.manager.dto.BidAskBrokerDTO;
 import com.portfolio.manager.dto.BidAskDTO;
 import com.portfolio.manager.integration.BidAskService;
 import com.portfolio.manager.repository.SubOrderRepo;
@@ -34,7 +35,6 @@ public class AlgoServiceImpl implements AlgoService {
 
     @Override
     public List<SubOrder> testSplitOrders(Order order, LocalDateTime startTime) {
-
         LocalDateTime endTime = startTime.plusMinutes(10L);
 //        LocalDateTime endTime = startTime.plusHours(1L);
         LocalDateTime halfCourtTime = LocalDateTime.of(LocalDate.now(), LocalTime.of(11, 29));
@@ -57,30 +57,33 @@ public class AlgoServiceImpl implements AlgoService {
     }
 
     @Override
-    public void execute(SubOrder order, Long orderId) {
+    public void execute(SubOrder order, Long orderId, Double price, Integer vol) {
         Trade trade = new Trade();
         trade.setCode(order.getSecurityCode());
         trade.setDirection(order.getBuyOrSell());
         trade.setOrderId(orderId);
-        if (order.getBuyOrSell().equals("买入")) {
-            BidAskDTO bidAskDTO = bidAskService.getSell1(order.getSecurityCode());
-            trade.setPrice(bidAskDTO.price());
+//       执行下单开始
 
-            if (bidAskDTO.volume().longValue() >= order.getRemainingShare()) {
-                trade.setVolume(order.getRemainingShare());
-            } else {
-                trade.setVolume(bidAskDTO.volume().longValue());
-            }
 
-        } else {
-            BidAskDTO bidAskDTO = bidAskService.getBuy1(order.getSecurityCode());
-            trade.setPrice(bidAskDTO.price());
-            if (bidAskDTO.volume().longValue() >= order.getRemainingShare()) {
-                trade.setVolume(order.getRemainingShare());
-            } else {
-                trade.setVolume(bidAskDTO.volume().longValue());
-            }
-        }
+
+//        执行下单结束
+        trade.setPrice(price);
+        trade.setVolume(Long.valueOf(vol));
+//        if (order.getBuyOrSell().equals("买入")) {
+//            trade.setPrice(bidAskDTO.bidPrice().get(0));
+//            if (bidAskDTO.bidVol().get(0).longValue() >= order.getRemainingShare()) {
+//                trade.setVolume(order.getRemainingShare());
+//            } else {
+//                trade.setVolume(bidAskDTO.bidVol().get(0).longValue());
+//            }
+//        } else {
+//            trade.setPrice(bidAskDTO.askPrice().get(0));
+//            if (bidAskDTO.askVol().get(0).longValue() >= order.getRemainingShare()) {
+//                trade.setVolume(order.getRemainingShare());
+//            } else {
+//                trade.setVolume(bidAskDTO.askVol().get(0).longValue());
+//            }
+//        }
         order.setRemainingShare(order.getRemainingShare() - trade.getVolume());
         tradeRepo.save(trade);
         subOrderRepo.save(order);

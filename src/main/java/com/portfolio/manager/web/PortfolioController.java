@@ -17,7 +17,6 @@ import java.util.List;
 @RequestMapping("/portfolio")
 @CrossOrigin
 public class PortfolioController {
-
     @Resource
     DynamicsRepo dynamicsRepo;
 
@@ -46,5 +45,4 @@ public class PortfolioController {
     public void addPortfolio(@RequestBody PortfolioDTO portfolioDTO) {
         portfolioService.addPortfolio(portfolioDTO);
     }
-
 }

@@ -1,10 +1,7 @@
 package com.portfolio.manager.domain;
 
 import com.portfolio.manager.domain.base.BaseEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.OneToMany;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -18,7 +15,8 @@ import java.util.List;
 @Entity(name = "orders")
 @ToString(callSuper = true)
 public class Order extends BaseEntity {
-    private String buyOrSell;
+    @Enumerated(EnumType.STRING)
+    private Direction buyOrSell;
     private Long plannedShare;
     private Long remainingShare;
     private String portfolioName;

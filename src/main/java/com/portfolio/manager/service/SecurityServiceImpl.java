@@ -14,7 +14,6 @@ public class SecurityServiceImpl implements SecurityService {
     @Resource
     private SecurityRepo securityRepo;
 
-
     @Override
     public String getSecurityName(String securityCode) {
         Security security = securityRepo.findOneByCode(securityCode);
@@ -38,5 +37,4 @@ public class SecurityServiceImpl implements SecurityService {
     public List<Security> listExistingStocks() {
         return securityRepo.findAll();
     }
-
 }
