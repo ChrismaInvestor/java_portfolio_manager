@@ -5,7 +5,7 @@ import com.portfolio.manager.domain.Order;
 import com.portfolio.manager.domain.Position;
 import com.portfolio.manager.domain.SubOrder;
 import com.portfolio.manager.dto.BidAskBrokerDTO;
-import com.portfolio.manager.integration.BidAskService;
+import com.portfolio.manager.integration.MarketDataService;
 import com.portfolio.manager.repository.OrderRepo;
 import com.portfolio.manager.service.AlgoService;
 import com.portfolio.manager.service.OrderService;
@@ -37,7 +37,7 @@ public class TradeTask {
     AlgoService algoService;
 
     @Resource
-    BidAskService bidAskService;
+    MarketDataService marketDataService;
 
     @Scheduled(fixedDelay = 3000L)
     public void placeOrder() {
@@ -51,7 +51,7 @@ public class TradeTask {
                         securityCodes.addAll(subOrders.stream().map(SubOrder::getSecurityCode).collect(Collectors.toSet()));
                     }
                 });
-                Map<String, BidAskBrokerDTO> bidAsks = bidAskService.getBidAsk(securityCodes.stream().toList()).stream().collect(Collectors.toMap(BidAskBrokerDTO::securityCode, Function.identity()));
+                Map<String, BidAskBrokerDTO> bidAsks = marketDataService.getBidAsk(securityCodes.stream().toList()).stream().collect(Collectors.toMap(BidAskBrokerDTO::securityCode, Function.identity()));
                 orders.stream().filter(order -> bidAsks.get(order.getSecurityCode()).askVol1() > 0 || bidAsks.get(order.getSecurityCode()).bidVol1() > 0).forEach(order -> {
 //                        List<SubOrder> subOrders = order.getSubOrders().stream().filter(subOrder -> this.isBetween(subOrder.getStartTime(), subOrder.getEndTime()) && subOrder.getRemainingShare() > 0).toList();
                     List<SubOrder> subOrders = order.getSubOrders().stream().filter(subOrder -> subOrder.getRemainingShare() > 0).toList();
