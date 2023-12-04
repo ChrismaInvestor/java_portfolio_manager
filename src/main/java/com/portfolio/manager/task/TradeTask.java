@@ -46,25 +46,27 @@ public class TradeTask {
             Set<String> securityCodes = new HashSet<>();
             if (!orders.isEmpty()) {
                 orders.forEach(order -> {
-                    List<SubOrder> subOrders = order.getSubOrders().stream().filter(subOrder -> subOrder.getRemainingShare() > 0).toList();
+                    List<SubOrder> subOrders = order.getSubOrders().stream().filter(subOrder ->  subOrder.getRemainingShare() > 0).toList();
                     if (!subOrders.isEmpty()) {
                         securityCodes.addAll(subOrders.stream().map(SubOrder::getSecurityCode).collect(Collectors.toSet()));
                     }
                 });
-                Map<String, BidAskBrokerDTO> bidAsks = marketDataService.getBidAsk(securityCodes.stream().toList()).stream().collect(Collectors.toMap(BidAskBrokerDTO::securityCode, Function.identity()));
-                orders.stream().filter(order -> bidAsks.get(order.getSecurityCode()).askVol1() > 0 || bidAsks.get(order.getSecurityCode()).bidVol1() > 0).forEach(order -> {
+                if (!securityCodes.isEmpty()) {
+                    Map<String, BidAskBrokerDTO> bidAsks = marketDataService.getBidAsk(securityCodes.stream().toList()).stream().collect(Collectors.toMap(BidAskBrokerDTO::securityCode, Function.identity()));
+                    orders.stream().filter(order -> bidAsks.get(order.getSecurityCode()).askVol1() > 0 || bidAsks.get(order.getSecurityCode()).bidVol1() > 0).forEach(order -> {
 //                        List<SubOrder> subOrders = order.getSubOrders().stream().filter(subOrder -> this.isBetween(subOrder.getStartTime(), subOrder.getEndTime()) && subOrder.getRemainingShare() > 0).toList();
-                    List<SubOrder> subOrders = order.getSubOrders().stream().filter(subOrder -> subOrder.getRemainingShare() > 0).toList();
-                    if (!subOrders.isEmpty()) {
-                        subOrders.stream().parallel().forEach(subOrder -> {
-                            if (order.getBuyOrSell().equals(Direction.买入)) {
-                                algoService.execute(subOrder, order.getId(), bidAsks.get(order.getSecurityCode()).askPrice1(), bidAsks.get(order.getSecurityCode()).askVol1());
-                            } else if (order.getBuyOrSell().equals(Direction.卖出)) {
-                                algoService.execute(subOrder, order.getId(), bidAsks.get(order.getSecurityCode()).bidPrice1(), bidAsks.get(order.getSecurityCode()).bidVol1());
-                            }
-                        });
-                    }
-                });
+                        List<SubOrder> subOrders = order.getSubOrders().stream().filter(subOrder -> this.isBetween(subOrder.getStartTime(), subOrder.getEndTime()) && subOrder.getRemainingShare() > 0).toList();
+                        if (!subOrders.isEmpty()) {
+                            subOrders.stream().parallel().forEach(subOrder -> {
+                                if (order.getBuyOrSell().equals(Direction.买入)) {
+                                    algoService.execute(subOrder, order.getId(), bidAsks.get(order.getSecurityCode()).askPrice1(), bidAsks.get(order.getSecurityCode()).askVol1());
+                                } else if (order.getBuyOrSell().equals(Direction.卖出)) {
+                                    algoService.execute(subOrder, order.getId(), bidAsks.get(order.getSecurityCode()).bidPrice1(), bidAsks.get(order.getSecurityCode()).bidVol1());
+                                }
+                            });
+                        }
+                    });
+                }
             }
 
 

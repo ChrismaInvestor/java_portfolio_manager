@@ -9,7 +9,7 @@ import java.util.List;
 public interface MarketDataService {
     List<SecurityDTO> listAllStocksInfo();
 
-    List<Price> listMinPrice(String code);
-
     List<BidAskBrokerDTO> getBidAsk(List<String> securityCodes);
+
+    List<Price> listMinPrice(List<String> securityCodes);
 }

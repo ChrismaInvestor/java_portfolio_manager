@@ -15,9 +15,9 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @RequiredArgsConstructor
-@Entity(name = "price")
+//@Entity(name = "price")
 @EntityListeners(AuditingEntityListener.class)
-@Table(uniqueConstraints = {@UniqueConstraint(columnNames = {"code","time"})})
+//@Table(uniqueConstraints = {@UniqueConstraint(columnNames = {"code","time"})})
 public class Price {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

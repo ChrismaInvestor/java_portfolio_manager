@@ -47,7 +47,7 @@ public class OrderServiceImpl implements OrderService {
         securityCodes.forEach(code -> {
             log.info("code: {}", code);
             String internalCode = code.split("\\.")[0];
-            BigDecimal price = BigDecimal.valueOf(priceService.getLatestPrice(internalCode).getPrice());
+            BigDecimal price = BigDecimal.valueOf(priceService.getLatestPrice(internalCode));
             BigDecimal divide = average.divide(price.multiply(BigDecimal.valueOf(100L)), RoundingMode.HALF_EVEN);
             BigDecimal min = divide.setScale(0, RoundingMode.DOWN);
             BigDecimal max = divide.setScale(0, RoundingMode.UP);
@@ -74,7 +74,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public List<OrderDTO> sell(List<Position> toSell) {
-        return toSell.stream().map(position -> new OrderDTO("卖", position.getSecurityShare(), securityService.getSecurityName(position.getSecurityCode()), position.getSecurityCode(), BigDecimal.valueOf(priceService.getLatestPrice(position.getSecurityCode()).getPrice()).multiply(BigDecimal.valueOf(position.getSecurityShare())).doubleValue())).toList();
+        return toSell.stream().map(position -> new OrderDTO("卖", position.getSecurityShare(), securityService.getSecurityName(position.getSecurityCode()), position.getSecurityCode(), BigDecimal.valueOf(priceService.getLatestPrice(position.getSecurityCode())).multiply(BigDecimal.valueOf(position.getSecurityShare())).doubleValue())).toList();
     }
 
     @Override
