@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 @RequestMapping("data")
 @RestController
 @CrossOrigin
-public class DataController {
+public class MarketDataManualSyncController {
     @Resource
     MarketDataService marketDataService;
 
