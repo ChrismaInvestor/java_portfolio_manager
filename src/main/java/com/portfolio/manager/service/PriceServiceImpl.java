@@ -16,7 +16,7 @@ public class PriceServiceImpl implements PriceService {
 
     @Override
     public Double getLatestPrice(String code) {
-        return marketDataService.getBidAsk(List.of(code)).get(0).lastPrice();
+        return marketDataService.getBidAsk(List.of(code)).get(0).askPrice1();
     }
 
 }

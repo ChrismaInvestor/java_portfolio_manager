@@ -1,8 +1,10 @@
 package com.portfolio.manager.service;
 
+import com.portfolio.manager.domain.Direction;
 import com.portfolio.manager.domain.Order;
 import com.portfolio.manager.domain.SubOrder;
 import com.portfolio.manager.domain.Trade;
+import com.portfolio.manager.integration.OrderPlacementService;
 import com.portfolio.manager.repository.SubOrderRepo;
 import com.portfolio.manager.repository.TradeRepo;
 import jakarta.annotation.Resource;
@@ -27,14 +29,11 @@ public class AlgoServiceImpl implements AlgoService {
     @Resource
     TradeRepo tradeRepo;
 
+    @Resource
+    OrderPlacementService orderPlacementService;
+
     @Override
-    public List<SubOrder> testSplitOrders(Order order, LocalDateTime startTime) {
-        LocalDateTime endTime = startTime.plusMinutes(10L);
-//        LocalDateTime endTime = startTime.plusHours(1L);
-        LocalDateTime halfCourtTime = LocalDateTime.of(LocalDate.now(), LocalTime.of(11, 29));
-//        if (endTime.isAfter(halfCourtTime)) {
-//            endTime = halfCourtTime;
-//        }
+    public List<SubOrder> testSplitOrders(Order order, LocalDateTime startTime, LocalDateTime endTime) {
         long minutes = Duration.between(startTime, endTime).toMinutes();
 
         List<SubOrder> subOrders = new ArrayList<>();
@@ -57,8 +56,11 @@ public class AlgoServiceImpl implements AlgoService {
         trade.setDirection(order.getBuyOrSell());
         trade.setOrderId(orderId);
 //       执行下单开始
-
-
+        if (order.getBuyOrSell().equals(Direction.买入)) {
+            orderPlacementService.buy(trade.getCode(), price, vol);
+        } else if (order.getBuyOrSell().equals(Direction.卖出)) {
+            orderPlacementService.sell(trade.getCode(), price, vol);
+        }
 
 //        执行下单结束
         trade.setPrice(price);

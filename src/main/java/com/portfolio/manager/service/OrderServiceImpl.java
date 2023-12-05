@@ -78,15 +78,14 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public void addOrder(OrderDTO orderDTO, String portfolio) {
+    public void addOrder(OrderDTO orderDTO, String portfolio, LocalDateTime startTime, LocalDateTime endTime) {
         Order order = new Order();
         order.setPlannedShare(orderDTO.share());
         order.setRemainingShare(orderDTO.share());
         order.setSecurityCode(orderDTO.securityCode().split("\\.")[0]);
         order.setPortfolioName(portfolio);
         order.setBuyOrSell(Direction.valueOf(orderDTO.buyOrSell()));
-        LocalDateTime time = LocalDateTime.now().plusMinutes(1L);
-        order.setSubOrders(algoService.testSplitOrders(order, time.minusSeconds(time.getSecond())));
+        order.setSubOrders(algoService.testSplitOrders(order, startTime, endTime));
         orderRepo.save(order);
     }
 

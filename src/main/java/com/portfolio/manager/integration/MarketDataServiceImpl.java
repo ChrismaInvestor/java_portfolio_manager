@@ -5,6 +5,7 @@ import com.portfolio.manager.dto.BidAskBrokerDTO;
 import com.portfolio.manager.dto.SecurityDTO;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
@@ -19,11 +20,14 @@ public class MarketDataServiceImpl implements MarketDataService {
     @Resource
     RestTemplate restTemplate;
 
+    @Value("${host.ip}")
+    private String hostIP;
+
     @Override
     public List<SecurityDTO> listAllStocksInfo() {
         ResponseEntity<List<SecurityDTO>> stocks;
         try {
-            stocks = restTemplate.exchange("http://localhost:5000/stocks", HttpMethod.GET, null, new ParameterizedTypeReference<>() {
+            stocks = restTemplate.exchange("http://" + hostIP + "/stocks", HttpMethod.GET, null, new ParameterizedTypeReference<>() {
             });
             return stocks.getBody();
         } catch (Exception e) {
@@ -36,9 +40,9 @@ public class MarketDataServiceImpl implements MarketDataService {
     public List<BidAskBrokerDTO> getBidAsk(List<String> securityCodes) {
         ResponseEntity<List<Map>> bidAsk;
         try {
-            bidAsk = restTemplate.exchange("http://localhost:5000/bidAsk/{codes}", HttpMethod.GET, null, new ParameterizedTypeReference<>() {
+            bidAsk = restTemplate.exchange("http://" + hostIP + "/bidAsk/{codes}", HttpMethod.GET, null, new ParameterizedTypeReference<>() {
             }, String.join(",", securityCodes));
-            return Objects.requireNonNull(bidAsk.getBody()).stream().map(v->new BidAskBrokerDTO(v.get("securityCode").toString(), Double.parseDouble(v.get("askPrice1").toString()),Double.parseDouble(v.get("bidPrice1").toString()),Integer.parseInt(v.get("askVol1").toString()),Integer.parseInt(v.get("bidVol1").toString()), Double.parseDouble(v.get("lastPrice").toString()))).toList();
+            return Objects.requireNonNull(bidAsk.getBody()).stream().map(v -> new BidAskBrokerDTO(v.get("securityCode").toString(), Double.parseDouble(v.get("askPrice1").toString()), Double.parseDouble(v.get("bidPrice1").toString()), Integer.parseInt(v.get("askVol1").toString()), Integer.parseInt(v.get("bidVol1").toString()), Double.parseDouble(v.get("lastPrice").toString()))).toList();
         } catch (Exception e) {
             log.error("Bid ask query: {}", e.getMessage());
         }
@@ -49,7 +53,7 @@ public class MarketDataServiceImpl implements MarketDataService {
     public List<Price> listMinPrice(List<String> securityCodes) {
         ResponseEntity<String> minPrices;
         try {
-            minPrices = restTemplate.exchange("http://localhost:5000/minPrice/{code}", HttpMethod.GET, null, new ParameterizedTypeReference<>() {
+            minPrices = restTemplate.exchange("http://" + hostIP + "/minPrice/{code}", HttpMethod.GET, null, new ParameterizedTypeReference<>() {
             }, String.join(",", securityCodes));
             return Collections.emptyList();
 //            return minPrices.getBody();
