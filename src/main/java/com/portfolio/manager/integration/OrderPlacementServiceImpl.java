@@ -9,8 +9,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.Collections;
-
 @Slf4j
 @Service
 public class OrderPlacementServiceImpl implements OrderPlacementService{
