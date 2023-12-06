@@ -60,7 +60,7 @@ public class PortfolioServiceImpl implements PortfolioService {
     @Override
     public void appendPositions(PortfolioDTO portfolioDTO, List<Position> positions) {
         Portfolio portfolio = portfolioRepo.findByName(portfolioDTO.name());
-        if (portfolio.getPositions().size() > 0) {
+        if (!portfolio.getPositions().isEmpty()) {
             Map<String, Position> map = positions.stream().collect(Collectors.toMap(Position::getSecurityCode, Function.identity()));
             portfolio.getPositions().forEach(position -> {
                 if (map.get(position.getSecurityCode()) != null) {

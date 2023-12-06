@@ -30,7 +30,7 @@ public class PositionController {
     public List<OrderDTO> calOrders(@RequestBody PositionDTO positionDTO) {
         List<Position> oldPositions = portfolioService.listPosition(positionDTO.portfolio());
         Set<String> oldPositionCodes = oldPositions.stream().map(Position::getSecurityCode).collect(Collectors.toSet());
-        Set<String> newPositionCodes = positionDTO.positions().stream().map(SecurityDTO::code).collect(Collectors.toSet());
+        Set<String> newPositionCodes = positionDTO.positions().stream().map(p -> p.code().split("\\.")[0]).collect(Collectors.toSet());
         Set<String> intersection = new HashSet<>(oldPositionCodes);
         intersection.retainAll(newPositionCodes);
         oldPositionCodes.removeAll(newPositionCodes);
@@ -39,6 +39,7 @@ public class PositionController {
         double toSellMarketValue = sellOrder.stream().mapToDouble(OrderDTO::value).sum();
         double cash = portfolioService.getCash(positionDTO.portfolio());
         List<OrderDTO> buyOrder = orderService.buySplitEven(newPositionCodes, toSellMarketValue, cash, oldPositions.stream().filter(position -> intersection.contains(position.getSecurityCode())).toList());
+        log.info("buy total: {}", buyOrder.stream().mapToDouble(OrderDTO::value).sum());
         return Stream.concat(sellOrder.stream(), buyOrder.stream()).toList();
     }
 

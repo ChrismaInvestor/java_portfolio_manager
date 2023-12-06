@@ -38,14 +38,17 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public List<OrderDTO> buySplitEven(Set<String> securityCodes, double toSellMarketValue, double cash, List<Position> holdings) {
-        BigDecimal totalValue = BigDecimal.valueOf(toSellMarketValue).add(BigDecimal.valueOf(cash));
+        log.info("new codes: {}, holding codes: {}", securityCodes, holdings);
+        double holdingsValue = holdings.stream().mapToDouble(holding ->
+            BigDecimal.valueOf(priceService.getLatestPrice(holding.getSecurityCode())).multiply(BigDecimal.valueOf(holding.getSecurityShare())).doubleValue()
+        ).sum();
+        BigDecimal totalValue = BigDecimal.valueOf(toSellMarketValue).add(BigDecimal.valueOf(cash)).add(BigDecimal.valueOf(holdingsValue));
         final BigDecimal average = totalValue.divide(BigDecimal.valueOf(securityCodes.size()), RoundingMode.HALF_DOWN).setScale(2, RoundingMode.HALF_DOWN);
         List<BigDecimal> maxTotal = new ArrayList<>();
         List<BigDecimal> minTotal = new ArrayList<>();
         List<OrderDTO> orders = new ArrayList<>();
         Map<String, Position> holdingCodes = holdings.stream().collect(Collectors.toMap(Position::getSecurityCode, Function.identity()));
         securityCodes.forEach(code -> {
-            log.info("code: {}", code);
             String internalCode = code.split("\\.")[0];
             BigDecimal price = BigDecimal.valueOf(priceService.getLatestPrice(internalCode));
             BigDecimal divide = average.divide(price.multiply(BigDecimal.valueOf(100L)), RoundingMode.HALF_EVEN);
@@ -54,7 +57,7 @@ public class OrderServiceImpl implements OrderService {
             maxTotal.add(max.multiply(price).multiply(BigDecimal.valueOf(100L)));
             minTotal.add(min.multiply(price).multiply(BigDecimal.valueOf(100L)));
             if (holdingCodes.containsKey(internalCode)) {
-                min = min.subtract(BigDecimal.valueOf(holdingCodes.get(internalCode).getSecurityShare()));
+                min = min.subtract(BigDecimal.valueOf(holdingCodes.get(internalCode).getSecurityShare()).divide(BigDecimal.valueOf(100L), RoundingMode.HALF_EVEN));
                 if (min.compareTo(BigDecimal.ZERO) < 0) {
                     OrderDTO order = new OrderDTO("卖出", min.abs().multiply(BigDecimal.valueOf(100L)).longValue(), securityService.getSecurityName(code.split("\\.")[0]), code, min.abs().multiply(price).multiply(BigDecimal.valueOf(100L)).doubleValue());
                     orders.add(order);
@@ -62,7 +65,6 @@ public class OrderServiceImpl implements OrderService {
                     OrderDTO order = new OrderDTO("买入", min.multiply(BigDecimal.valueOf(100L)).longValue(), securityService.getSecurityName(code.split("\\.")[0]), code, min.multiply(price).multiply(BigDecimal.valueOf(100L)).doubleValue());
                     orders.add(order);
                 }
-
             } else {
                 OrderDTO order = new OrderDTO("买入", min.multiply(BigDecimal.valueOf(100L)).longValue(), securityService.getSecurityName(code.split("\\.")[0]), code, min.multiply(price).multiply(BigDecimal.valueOf(100L)).doubleValue());
                 orders.add(order);
