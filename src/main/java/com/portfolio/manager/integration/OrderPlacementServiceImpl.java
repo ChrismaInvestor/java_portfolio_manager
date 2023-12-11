@@ -1,5 +1,6 @@
 package com.portfolio.manager.integration;
 
+import com.portfolio.manager.dto.PositionIntegrateDTO;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -40,6 +41,19 @@ public class OrderPlacementServiceImpl implements OrderPlacementService{
             return orderId.getBody();
         } catch (Exception e) {
             log.error("Buy query: {}", e.getMessage());
+        }
+        return null;
+    }
+
+    @Override
+    public PositionIntegrateDTO checkPosition(String code) {
+        ResponseEntity<PositionIntegrateDTO> res;
+        try{
+            res = restTemplate.exchange("http://" + hostIP + "/position/{code}", HttpMethod.GET, null, new ParameterizedTypeReference<>() {
+            }, code);
+            return res.getBody();
+        }catch (Exception e){
+            log.error("Check position: {}", e.getMessage());
         }
         return null;
     }

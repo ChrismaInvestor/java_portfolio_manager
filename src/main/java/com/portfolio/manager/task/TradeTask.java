@@ -1,11 +1,10 @@
 package com.portfolio.manager.task;
 
-import com.portfolio.manager.domain.Direction;
-import com.portfolio.manager.domain.Order;
-import com.portfolio.manager.domain.Position;
-import com.portfolio.manager.domain.SubOrder;
+import com.portfolio.manager.domain.*;
 import com.portfolio.manager.dto.BidAskBrokerDTO;
+import com.portfolio.manager.dto.PositionIntegrateDTO;
 import com.portfolio.manager.integration.MarketDataService;
+import com.portfolio.manager.integration.OrderPlacementService;
 import com.portfolio.manager.repository.OrderRepo;
 import com.portfolio.manager.service.AlgoService;
 import com.portfolio.manager.service.OrderService;
@@ -15,6 +14,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Function;
@@ -39,6 +40,9 @@ public class TradeTask {
     @Resource
     MarketDataService marketDataService;
 
+    @Resource
+    OrderPlacementService orderPlacementService;
+
     @Scheduled(fixedDelay = 3000L)
     public void placeOrder() {
         portfolioService.listPortfolio().forEach(portfolioDTO -> {
@@ -53,11 +57,7 @@ public class TradeTask {
                 });
                 if (!securityCodes.isEmpty()) {
                     Map<String, BidAskBrokerDTO> bidAsks = marketDataService.getBidAsk(securityCodes.stream().toList()).stream().collect(Collectors.toMap(BidAskBrokerDTO::securityCode, Function.identity()));
-                    orders.stream().filter(order -> {
-                        if (bidAsks.get(order.getSecurityCode()).askVol1()==null){
-                            log.info("null ask: {}", bidAsks.get(order.getSecurityCode()));
-                        }
-                        return bidAsks.get(order.getSecurityCode()).askVol1() > 0 || bidAsks.get(order.getSecurityCode()).bidVol1() > 0;}).forEach(order -> {
+                    orders.forEach(order -> {
 //                        List<SubOrder> subOrders = order.getSubOrders().stream().filter(subOrder -> this.isBetween(subOrder.getStartTime(), subOrder.getEndTime()) && subOrder.getRemainingShare() > 0).toList();
                         List<SubOrder> subOrders = order.getSubOrders().stream().filter(subOrder -> this.isBetween(subOrder.getStartTime(), subOrder.getEndTime()) && subOrder.getRemainingShare() > 0).toList();
                         if (!subOrders.isEmpty()) {
@@ -90,20 +90,38 @@ public class TradeTask {
     public void updateMainOrder() {
         portfolioService.listPortfolio().forEach(portfolioDTO -> {
             List<Order> orders = orderService.listOrders(portfolioDTO.name());
-            List<Position> positions = new ArrayList<>();
+            Portfolio portfolio = portfolioService.getPortfolio(portfolioDTO.name());
             orders.forEach(order -> {
+                PositionIntegrateDTO position = orderPlacementService.checkPosition(order.getSecurityCode());
+                if (position.vol()!=null){
+                    List<Position> positionList = portfolio.getPositions().stream().filter(p -> p.getSecurityCode().equals(order.getSecurityCode())).toList();
+                    if (positionList.isEmpty()){
+                        Position currentPosition = new Position();
+                        currentPosition.setSecurityCode(order.getSecurityCode());
+                        currentPosition.setSecurityShare(Long.valueOf(position.vol()));
+                        currentPosition.setCost(BigDecimal.valueOf(position.unitCost()).multiply(BigDecimal.valueOf(currentPosition.getSecurityShare())).doubleValue());
+                        portfolioService.updatePosition(currentPosition);
+                        portfolio.getPositions().add(currentPosition);
+                    }else{
+                        Position currentPosition = positionList.get(0);
+                        currentPosition.setSecurityShare(Long.valueOf(position.vol()));
+                        currentPosition.setCost(BigDecimal.valueOf(position.unitCost()).multiply(BigDecimal.valueOf(currentPosition.getSecurityShare())).doubleValue());
+                        portfolioService.updatePosition(currentPosition);
+                    }
+                }
                 long sum = order.getSubOrders().stream().mapToLong(SubOrder::getRemainingShare).sum();
                 order.setRemainingShare(sum);
-                if (order.getPlannedShare() - sum > 0) {
-                    Position position = new Position();
-                    position.setSecurityCode(order.getSecurityCode());
-                    position.setSecurityShare(order.getPlannedShare() - sum);
-                    position.setCost(orderService.getCost(order.getId()));
-                    positions.add(position);
-                }
+//                if (order.getPlannedShare() - sum > 0) {
+//                    Position position = new Position();
+//                    position.setSecurityCode(order.getSecurityCode());
+//                    position.setSecurityShare(order.getPlannedShare() - sum);
+//                    position.setCost(orderService.getCost(order.getId()));
+//                    positions.add(position);
+//                }
             });
             orderRepo.saveAll(orders);
-            portfolioService.appendPositions(portfolioDTO, positions);
+            portfolioService.updatePortfolio(portfolio);
+//            portfolioService.appendPositions(portfolioDTO, positions);
         });
     }
 

@@ -34,6 +34,11 @@ public class PortfolioServiceImpl implements PortfolioService {
     }
 
     @Override
+    public Portfolio getPortfolio(String portfolioName) {
+        return portfolioRepo.findByName(portfolioName);
+    }
+
+    @Override
     public Double getCash(String portfolioName) {
         return dynamicsRepo.findByPortfolioName(portfolioName).getCash();
     }
@@ -73,6 +78,16 @@ public class PortfolioServiceImpl implements PortfolioService {
             positionRepo.saveAll(positions);
             portfolio.setPositions(positions);
         }
+        portfolioRepo.save(portfolio);
+    }
+
+    @Override
+    public void updatePosition(Position position) {
+        positionRepo.save(position);
+    }
+
+    @Override
+    public void updatePortfolio(Portfolio portfolio) {
         portfolioRepo.save(portfolio);
     }
 

@@ -1,4 +1,6 @@
 package com.portfolio.manager.dto;
 
-public record OrderDTO(String buyOrSell, Long share, String securityName, String securityCode, Double value) {
+import com.portfolio.manager.domain.Direction;
+
+public record OrderDTO(Direction buyOrSell, Long share, String securityName, String securityCode, Double value) {
 }

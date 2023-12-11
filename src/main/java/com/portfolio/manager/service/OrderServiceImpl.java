@@ -59,24 +59,24 @@ public class OrderServiceImpl implements OrderService {
             if (holdingCodes.containsKey(internalCode)) {
                 min = min.subtract(BigDecimal.valueOf(holdingCodes.get(internalCode).getSecurityShare()).divide(BigDecimal.valueOf(100L), RoundingMode.HALF_EVEN));
                 if (min.compareTo(BigDecimal.ZERO) < 0) {
-                    OrderDTO order = new OrderDTO("卖出", min.abs().multiply(BigDecimal.valueOf(100L)).longValue(), securityService.getSecurityName(code.split("\\.")[0]), code, min.abs().multiply(price).multiply(BigDecimal.valueOf(100L)).doubleValue());
+                    OrderDTO order = new OrderDTO(Direction.卖出, min.abs().multiply(BigDecimal.valueOf(100L)).longValue(), securityService.getSecurityName(code.split("\\.")[0]), code, min.abs().multiply(price).multiply(BigDecimal.valueOf(100L)).doubleValue());
                     orders.add(order);
                 } else {
-                    OrderDTO order = new OrderDTO("买入", min.multiply(BigDecimal.valueOf(100L)).longValue(), securityService.getSecurityName(code.split("\\.")[0]), code, min.multiply(price).multiply(BigDecimal.valueOf(100L)).doubleValue());
+                    OrderDTO order = new OrderDTO(Direction.买入, min.multiply(BigDecimal.valueOf(100L)).longValue(), securityService.getSecurityName(code.split("\\.")[0]), code, min.multiply(price).multiply(BigDecimal.valueOf(100L)).doubleValue());
                     orders.add(order);
                 }
             } else {
-                OrderDTO order = new OrderDTO("买入", min.multiply(BigDecimal.valueOf(100L)).longValue(), securityService.getSecurityName(code.split("\\.")[0]), code, min.multiply(price).multiply(BigDecimal.valueOf(100L)).doubleValue());
+                OrderDTO order = new OrderDTO(Direction.买入, min.multiply(BigDecimal.valueOf(100L)).longValue(), securityService.getSecurityName(code.split("\\.")[0]), code, min.multiply(price).multiply(BigDecimal.valueOf(100L)).doubleValue());
                 orders.add(order);
             }
         });
         log.info("Max total: {}, min total: {}", maxTotal.stream().mapToDouble(BigDecimal::doubleValue).sum(), minTotal.stream().mapToDouble(BigDecimal::doubleValue).sum());
-        return orders;
+        return orders.stream().filter(order -> order.share() > 0).toList();
     }
 
     @Override
     public List<OrderDTO> sell(List<Position> toSell) {
-        return toSell.stream().map(position -> new OrderDTO("卖", position.getSecurityShare(), securityService.getSecurityName(position.getSecurityCode()), position.getSecurityCode(), BigDecimal.valueOf(priceService.getLatestPrice(position.getSecurityCode())).multiply(BigDecimal.valueOf(position.getSecurityShare())).doubleValue())).toList();
+        return toSell.stream().map(position -> new OrderDTO(Direction.卖出, position.getSecurityShare(), securityService.getSecurityName(position.getSecurityCode()), position.getSecurityCode(), BigDecimal.valueOf(priceService.getLatestPrice(position.getSecurityCode())).multiply(BigDecimal.valueOf(position.getSecurityShare())).doubleValue())).toList();
     }
 
     @Override
@@ -86,7 +86,7 @@ public class OrderServiceImpl implements OrderService {
         order.setRemainingShare(orderDTO.share());
         order.setSecurityCode(orderDTO.securityCode().split("\\.")[0]);
         order.setPortfolioName(portfolio);
-        order.setBuyOrSell(Direction.valueOf(orderDTO.buyOrSell()));
+        order.setBuyOrSell(orderDTO.buyOrSell());
         order.setSubOrders(algoService.testSplitOrders(order, startTime, endTime));
         orderRepo.save(order);
     }
@@ -103,7 +103,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public List<Order> listOrders(String portfolio) {
-        return orderRepo.findByPortfolioName(portfolio).stream().filter(order -> order.getRemainingShare() > 0L).toList();
+        return orderRepo.findByPortfolioName(portfolio);
     }
 
     @Override
