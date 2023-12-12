@@ -87,6 +87,11 @@ public class PortfolioServiceImpl implements PortfolioService {
     }
 
     @Override
+    public void deletePosition(Position position) {
+        positionRepo.delete(position);
+    }
+
+    @Override
     public void updatePortfolio(Portfolio portfolio) {
         portfolioRepo.save(portfolio);
     }

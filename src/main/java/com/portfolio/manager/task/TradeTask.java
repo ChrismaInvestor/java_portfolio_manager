@@ -16,10 +16,7 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -95,20 +92,29 @@ public class TradeTask {
             Portfolio portfolio = portfolioService.getPortfolio(portfolioDTO.name());
             orders.forEach(order -> {
                 PositionIntegrateDTO position = orderPlacementService.checkPosition(order.getSecurityCode());
-                if (position.vol()!=null){
-                    List<Position> positionList = portfolio.getPositions().stream().filter(p -> p.getSecurityCode().equals(order.getSecurityCode())).toList();
-                    if (positionList.isEmpty()){
-                        Position currentPosition = new Position();
-                        currentPosition.setSecurityCode(order.getSecurityCode());
-                        currentPosition.setSecurityShare(Long.valueOf(position.vol()));
-                        currentPosition.setCost(BigDecimal.valueOf(position.unitCost()).multiply(BigDecimal.valueOf(currentPosition.getSecurityShare())).doubleValue());
-                        portfolioService.updatePosition(currentPosition);
-                        portfolio.getPositions().add(currentPosition);
-                    }else{
-                        Position currentPosition = positionList.get(0);
-                        currentPosition.setSecurityShare(Long.valueOf(position.vol()));
-                        currentPosition.setCost(BigDecimal.valueOf(position.unitCost()).multiply(BigDecimal.valueOf(currentPosition.getSecurityShare())).doubleValue());
-                        portfolioService.updatePosition(currentPosition);
+                if (position != null) {
+                    if (position.vol() != null) {
+                        Optional<Position> existingPosition = portfolio.getPositions().stream().filter(p -> p.getSecurityCode().equals(order.getSecurityCode())).findFirst();
+                        if (existingPosition.isEmpty()) {
+                            Position currentPosition = new Position();
+                            currentPosition.setSecurityCode(order.getSecurityCode());
+                            currentPosition.setSecurityShare(Long.valueOf(position.vol()));
+                            currentPosition.setCost(BigDecimal.valueOf(position.unitCost()).multiply(BigDecimal.valueOf(currentPosition.getSecurityShare())).doubleValue());
+                            portfolioService.updatePosition(currentPosition);
+                            portfolio.getPositions().add(currentPosition);
+                        } else {
+                            Position currentPosition = existingPosition.get();
+                            currentPosition.setSecurityShare(Long.valueOf(position.vol()));
+                            currentPosition.setCost(BigDecimal.valueOf(position.unitCost()).multiply(BigDecimal.valueOf(currentPosition.getSecurityShare())).doubleValue());
+                            portfolioService.updatePosition(currentPosition);
+                        }
+                    } else {
+                        Optional<Position> existingPosition = portfolio.getPositions().stream().filter(p -> p.getSecurityCode().equals(order.getSecurityCode())).findFirst();
+                        if (existingPosition.isPresent()) {
+                            portfolio.setPositions(portfolio.getPositions().stream().filter(p -> !p.getSecurityCode().equals(order.getSecurityCode())).toList());
+                            portfolioService.updatePortfolio(portfolio);
+                            portfolioService.deletePosition(existingPosition.get());
+                        }
                     }
                 }
                 long sum = order.getSubOrders().stream().mapToLong(SubOrder::getRemainingShare).sum();

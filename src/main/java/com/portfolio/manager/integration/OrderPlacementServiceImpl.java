@@ -12,7 +12,7 @@ import org.springframework.web.client.RestTemplate;
 
 @Slf4j
 @Service
-public class OrderPlacementServiceImpl implements OrderPlacementService{
+public class OrderPlacementServiceImpl implements OrderPlacementService {
     @Resource
     RestTemplate restTemplate;
 
@@ -48,11 +48,11 @@ public class OrderPlacementServiceImpl implements OrderPlacementService{
     @Override
     public PositionIntegrateDTO checkPosition(String code) {
         ResponseEntity<PositionIntegrateDTO> res;
-        try{
+        try {
             res = restTemplate.exchange("http://" + hostIP + "/position/{code}", HttpMethod.GET, null, new ParameterizedTypeReference<>() {
             }, code);
             return res.getBody();
-        }catch (Exception e){
+        } catch (Exception e) {
             log.error("Check position: {}", e.getMessage());
         }
         return null;

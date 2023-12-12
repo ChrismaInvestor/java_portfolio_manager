@@ -21,5 +21,7 @@ public interface PortfolioService {
 
     void updatePosition(Position position);
 
+    void deletePosition(Position position);
+
     void updatePortfolio(Portfolio portfolio);
 }
