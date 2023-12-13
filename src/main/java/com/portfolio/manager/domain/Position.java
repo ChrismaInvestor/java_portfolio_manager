@@ -20,4 +20,6 @@ public class Position extends BaseEntity {
     private Long securityShare;
 
     private Double cost;
+
+    private Double marketValue;
 }

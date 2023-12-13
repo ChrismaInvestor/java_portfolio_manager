@@ -39,6 +39,16 @@ public class PortfolioServiceImpl implements PortfolioService {
     }
 
     @Override
+    public Dynamics getDynamics(Portfolio portfolio) {
+        return dynamicsRepo.findByPortfolioName(portfolio.getName());
+    }
+
+    @Override
+    public void updateDynamics(Dynamics dynamics) {
+        dynamicsRepo.save(dynamics);
+    }
+
+    @Override
     public Double getCash(String portfolioName) {
         return dynamicsRepo.findByPortfolioName(portfolioName).getCash();
     }

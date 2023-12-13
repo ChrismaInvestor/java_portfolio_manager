@@ -1,6 +1,7 @@
 package com.portfolio.manager.integration;
 
 import com.portfolio.manager.dto.PositionIntegrateDTO;
+import com.portfolio.manager.dto.TradeDTO;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -9,6 +10,8 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+
+import java.util.List;
 
 @Slf4j
 @Service
@@ -54,6 +57,19 @@ public class OrderPlacementServiceImpl implements OrderPlacementService {
             return res.getBody();
         } catch (Exception e) {
             log.error("Check position: {}", e.getMessage());
+        }
+        return null;
+    }
+
+    @Override
+    public List<TradeDTO> listTodayTrades() {
+        ResponseEntity<List<TradeDTO>> res;
+        try {
+            res = restTemplate.exchange("http://" + hostIP + "/todayTrades", HttpMethod.GET, null, new ParameterizedTypeReference<>() {
+            });
+            return res.getBody();
+        } catch (Exception e) {
+            log.error("List today trades: {}", e.getMessage());
         }
         return null;
     }

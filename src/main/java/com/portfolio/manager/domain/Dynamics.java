@@ -17,6 +17,7 @@ public class Dynamics extends BaseEntity {
     @Column(unique = true)
     private String portfolioName;
     private Double cash;
+    private Double lastDayCash;
     private Double totalMarketValue;
     private Double securityMarketValue;
     private Double profitMargin;

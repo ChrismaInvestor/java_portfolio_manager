@@ -1,6 +1,9 @@
 package com.portfolio.manager.integration;
 
 import com.portfolio.manager.dto.PositionIntegrateDTO;
+import com.portfolio.manager.dto.TradeDTO;
+
+import java.util.List;
 
 public interface OrderPlacementService {
 
@@ -11,5 +14,7 @@ public interface OrderPlacementService {
     String sell(String code, Double price, Integer vol);
 
     PositionIntegrateDTO checkPosition(String code);
+
+    List<TradeDTO> listTodayTrades();
 
 }

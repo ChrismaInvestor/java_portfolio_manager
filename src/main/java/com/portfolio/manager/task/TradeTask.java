@@ -3,6 +3,7 @@ package com.portfolio.manager.task;
 import com.portfolio.manager.domain.*;
 import com.portfolio.manager.dto.BidAskBrokerDTO;
 import com.portfolio.manager.dto.PositionIntegrateDTO;
+import com.portfolio.manager.dto.TradeDTO;
 import com.portfolio.manager.integration.MarketDataService;
 import com.portfolio.manager.integration.OrderPlacementService;
 import com.portfolio.manager.repository.OrderRepo;
@@ -100,15 +101,18 @@ public class TradeTask {
                             currentPosition.setSecurityCode(order.getSecurityCode());
                             currentPosition.setSecurityShare(Long.valueOf(position.vol()));
                             currentPosition.setCost(BigDecimal.valueOf(position.unitCost()).multiply(BigDecimal.valueOf(currentPosition.getSecurityShare())).doubleValue());
+                            currentPosition.setMarketValue(position.marketValue());
                             portfolioService.updatePosition(currentPosition);
                             portfolio.getPositions().add(currentPosition);
                         } else {
                             Position currentPosition = existingPosition.get();
                             currentPosition.setSecurityShare(Long.valueOf(position.vol()));
                             currentPosition.setCost(BigDecimal.valueOf(position.unitCost()).multiply(BigDecimal.valueOf(currentPosition.getSecurityShare())).doubleValue());
+                            currentPosition.setMarketValue(position.marketValue());
                             portfolioService.updatePosition(currentPosition);
                         }
                     } else {
+                        // Remove positions
                         Optional<Position> existingPosition = portfolio.getPositions().stream().filter(p -> p.getSecurityCode().equals(order.getSecurityCode())).findFirst();
                         if (existingPosition.isPresent()) {
                             portfolio.setPositions(portfolio.getPositions().stream().filter(p -> !p.getSecurityCode().equals(order.getSecurityCode())).toList());
@@ -129,6 +133,13 @@ public class TradeTask {
             });
             orderRepo.saveAll(orders);
             portfolioService.updatePortfolio(portfolio);
+
+            double todayTradeTotal = orderPlacementService.listTodayTrades().stream().mapToDouble(TradeDTO::amount).sum();
+            Dynamics dynamics = portfolioService.getDynamics(portfolio);
+            dynamics.setCash(BigDecimal.valueOf(dynamics.getLastDayCash()).subtract(BigDecimal.valueOf(todayTradeTotal)).doubleValue());
+            dynamics.setSecurityMarketValue(portfolio.getPositions().stream().mapToDouble(Position::getMarketValue).sum());
+            dynamics.setTotalMarketValue(BigDecimal.valueOf(dynamics.getCash()).add(BigDecimal.valueOf(dynamics.getSecurityMarketValue())).doubleValue());
+            portfolioService.updateDynamics(dynamics);
 //            portfolioService.appendPositions(portfolioDTO, positions);
         });
     }
