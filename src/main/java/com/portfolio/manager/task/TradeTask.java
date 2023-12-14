@@ -2,6 +2,7 @@ package com.portfolio.manager.task;
 
 import com.portfolio.manager.domain.*;
 import com.portfolio.manager.dto.BidAskBrokerDTO;
+import com.portfolio.manager.dto.OrderDTO;
 import com.portfolio.manager.dto.PositionIntegrateDTO;
 import com.portfolio.manager.dto.TradeDTO;
 import com.portfolio.manager.integration.MarketDataService;
@@ -16,7 +17,9 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -43,9 +46,13 @@ public class TradeTask {
     @Resource
     OrderPlacementService orderPlacementService;
 
+    BigDecimal takeProfit = new BigDecimal("1.075");
+
+    BigDecimal stopLoss = new BigDecimal("0.975");
+
     @Scheduled(fixedDelay = 3000L)
     public void placeOrder() {
-        portfolioService.listPortfolio().forEach(portfolioDTO -> {
+        portfolioService.listPortfolioDTO().forEach(portfolioDTO -> {
             List<Order> orders = orderService.listOrders(portfolioDTO.name());
             Set<String> securityCodes = new HashSet<>();
             if (!orders.isEmpty()) {
@@ -87,18 +94,44 @@ public class TradeTask {
     }
 
     @Scheduled(fixedDelay = 6000L)
+    public void autoTrade() {
+        if (!isTradeTime()) {
+            return;
+        }
+        portfolioService.listPortfolio().stream().filter(Portfolio::getTakeProfitStopLoss
+        ).parallel().forEach(portfolio -> {
+            List<Position> positions = portfolioService.listPosition(portfolio.getName());
+            List<String> codes = positions.stream().map(Position::getSecurityCode).toList();
+            marketDataService.getBidAsk(codes).forEach(
+                    bidAskBrokerDTO -> {
+                        if (BigDecimal.valueOf(bidAskBrokerDTO.bidPrice1()).divide(BigDecimal.valueOf(bidAskBrokerDTO.lastClose()), 4, RoundingMode.HALF_EVEN).compareTo(takeProfit) >= 0 ||
+                                BigDecimal.valueOf(bidAskBrokerDTO.askPrice1()).divide(BigDecimal.valueOf(bidAskBrokerDTO.lastClose()), 4, RoundingMode.HALF_EVEN).compareTo(stopLoss) <= 0) {
+                            List<OrderDTO> orders = orderService.sell(positions.stream().filter(position -> position.getSecurityCode().equals(bidAskBrokerDTO.securityCode())).toList());
+                            if (!orders.isEmpty()) {
+                                log.warn("BidAsk hit: {}", bidAskBrokerDTO);
+                                orderService.addOrder(orders.get(0), portfolio.getName(), LocalDateTime.now(), LocalDateTime.now().plusMinutes(1L));
+                            }
+                        }
+                    }
+            );
+
+        });
+    }
+
+    @Scheduled(fixedDelay = 6000L)
     public void updateMainOrder() {
-        portfolioService.listPortfolio().forEach(portfolioDTO -> {
+        portfolioService.listPortfolioDTO().forEach(portfolioDTO -> {
             List<Order> orders = orderService.listOrders(portfolioDTO.name());
             Portfolio portfolio = portfolioService.getPortfolio(portfolioDTO.name());
-            orders.forEach(order -> {
-                PositionIntegrateDTO position = orderPlacementService.checkPosition(order.getSecurityCode());
+            Set<String> codes = orders.stream().map(Order::getSecurityCode).collect(Collectors.toSet());
+            codes.forEach(code -> {
+                PositionIntegrateDTO position = orderPlacementService.checkPosition(code);
                 if (position != null) {
                     if (position.vol() != null) {
-                        Optional<Position> existingPosition = portfolio.getPositions().stream().filter(p -> p.getSecurityCode().equals(order.getSecurityCode())).findFirst();
+                        Optional<Position> existingPosition = portfolio.getPositions().stream().filter(p -> p.getSecurityCode().equals(code)).findFirst();
                         if (existingPosition.isEmpty()) {
                             Position currentPosition = new Position();
-                            currentPosition.setSecurityCode(order.getSecurityCode());
+                            currentPosition.setSecurityCode(code);
                             currentPosition.setSecurityShare(Long.valueOf(position.vol()));
                             currentPosition.setCost(BigDecimal.valueOf(position.unitCost()).multiply(BigDecimal.valueOf(currentPosition.getSecurityShare())).doubleValue());
                             currentPosition.setMarketValue(position.marketValue());
@@ -113,14 +146,16 @@ public class TradeTask {
                         }
                     } else {
                         // Remove positions
-                        Optional<Position> existingPosition = portfolio.getPositions().stream().filter(p -> p.getSecurityCode().equals(order.getSecurityCode())).findFirst();
+                        Optional<Position> existingPosition = portfolio.getPositions().stream().filter(p -> p.getSecurityCode().equals(code)).findFirst();
                         if (existingPosition.isPresent()) {
-                            portfolio.setPositions(portfolio.getPositions().stream().filter(p -> !p.getSecurityCode().equals(order.getSecurityCode())).toList());
+                            portfolio.setPositions(portfolio.getPositions().stream().filter(p -> !p.getSecurityCode().equals(code)).toList());
                             portfolioService.updatePortfolio(portfolio);
                             portfolioService.deletePosition(existingPosition.get());
                         }
                     }
                 }
+            });
+            orders.forEach(order -> {
                 long sum = order.getSubOrders().stream().mapToLong(SubOrder::getRemainingShare).sum();
                 order.setRemainingShare(sum);
 //                if (order.getPlannedShare() - sum > 0) {
@@ -147,5 +182,10 @@ public class TradeTask {
     private boolean isBetween(LocalDateTime startTime, LocalDateTime endTime) {
         LocalDateTime now = LocalDateTime.now();
         return !now.isBefore(startTime) && !now.isAfter(endTime);
+    }
+
+    private boolean isTradeTime() {
+        LocalTime now = LocalTime.now();
+        return !now.isBefore(LocalTime.of(9, 30, 0)) && !now.isAfter(LocalTime.of(14, 57, 0));
     }
 }

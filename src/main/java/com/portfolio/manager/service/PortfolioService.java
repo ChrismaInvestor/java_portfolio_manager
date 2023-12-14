@@ -18,7 +18,9 @@ public interface PortfolioService {
 
     Double getCash(String portfolioName);
 
-    List<PortfolioDTO> listPortfolio();
+    List<PortfolioDTO> listPortfolioDTO();
+    List<Portfolio> listPortfolio();
+
 
     void addPortfolio(PortfolioDTO portfolioDTO);
 

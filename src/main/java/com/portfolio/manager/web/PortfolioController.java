@@ -28,7 +28,7 @@ public class PortfolioController {
 
     @GetMapping
     public List<PortfolioDTO> listPortfolio() {
-        return portfolioService.listPortfolio();
+        return portfolioService.listPortfolioDTO();
     }
 
     @GetMapping("dynamics")

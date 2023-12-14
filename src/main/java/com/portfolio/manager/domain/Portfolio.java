@@ -29,6 +29,8 @@ public class Portfolio extends BaseEntity {
     @OneToMany(fetch = FetchType.EAGER)
     private List<Position> positions;
 
+    private Boolean takeProfitStopLoss;
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

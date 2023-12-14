@@ -54,8 +54,13 @@ public class PortfolioServiceImpl implements PortfolioService {
     }
 
     @Override
-    public List<PortfolioDTO> listPortfolio() {
+    public List<PortfolioDTO> listPortfolioDTO() {
         return portfolioRepo.findAll().stream().map(portfolio -> new PortfolioDTO(portfolio.getName(), portfolio.getDescription(), portfolio.getAccount())).toList();
+    }
+
+    @Override
+    public List<Portfolio> listPortfolio() {
+        return portfolioRepo.findAll();
     }
 
     @Override

@@ -42,7 +42,7 @@ public class MarketDataServiceImpl implements MarketDataService {
         try {
             bidAsk = restTemplate.exchange("http://" + hostIP + "/bidAsk/{codes}", HttpMethod.GET, null, new ParameterizedTypeReference<>() {
             }, String.join(",", securityCodes));
-            return Objects.requireNonNull(bidAsk.getBody()).stream().map(v -> new BidAskBrokerDTO(v.get("securityCode").toString(), Double.parseDouble(v.get("askPrice1").toString()), Double.parseDouble(v.get("bidPrice1").toString()), Integer.parseInt(v.get("askVol1").toString()), Integer.parseInt(v.get("bidVol1").toString()), Double.parseDouble(v.get("lastPrice").toString()))).toList();
+            return Objects.requireNonNull(bidAsk.getBody()).stream().map(v -> new BidAskBrokerDTO(v.get("securityCode").toString(), Double.parseDouble(v.get("askPrice1").toString()), Double.parseDouble(v.get("bidPrice1").toString()), Integer.parseInt(v.get("askVol1").toString()), Integer.parseInt(v.get("bidVol1").toString()), Double.parseDouble(v.get("lastPrice").toString()), Double.parseDouble(v.get("lastClose").toString()))).toList();
         } catch (Exception e) {
             log.error("Bid ask query: {}", e.getMessage());
         }

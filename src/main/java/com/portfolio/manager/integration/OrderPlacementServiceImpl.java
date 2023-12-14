@@ -56,7 +56,7 @@ public class OrderPlacementServiceImpl implements OrderPlacementService {
             }, code);
             return res.getBody();
         } catch (Exception e) {
-            log.error("Check position: {}", e.getMessage());
+            log.error("Code: {}, Check position: {}", code, e.getMessage());
         }
         return null;
     }
