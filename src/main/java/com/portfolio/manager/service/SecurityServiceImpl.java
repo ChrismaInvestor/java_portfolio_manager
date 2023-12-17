@@ -25,6 +25,7 @@ public class SecurityServiceImpl implements SecurityService {
         Security existedSecurity = securityRepo.findOneByCode(security.getCode());
         if (existedSecurity == null) {
             if (security.getName().matches(".*" + "[\\u4e00-\\u9fa5]"+ ".*")){
+                log.info("security: {}", security);
                 securityRepo.save(security);
             }
         } else {

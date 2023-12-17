@@ -1,7 +1,9 @@
 package com.portfolio.manager.web;
 
 import com.portfolio.manager.domain.Position;
+import com.portfolio.manager.domain.strategy_specific.PositionBookForCrown;
 import com.portfolio.manager.dto.*;
+import com.portfolio.manager.repository.PositionBookForCrownRepo;
 import com.portfolio.manager.service.OrderService;
 import com.portfolio.manager.service.PortfolioService;
 import jakarta.annotation.Resource;
@@ -26,6 +28,9 @@ public class PositionController {
     @Resource
     OrderService orderService;
 
+    @Resource
+    PositionBookForCrownRepo positionBookForCrownRepo;
+
     @PostMapping
     public List<OrderDTO> calOrders(@RequestBody PositionDTO positionDTO) {
         List<Position> oldPositions = portfolioService.listPosition(positionDTO.portfolio());
@@ -47,6 +52,20 @@ public class PositionController {
     public void addOrders(@RequestBody OrderPlacementDTO orderPlacement) {
         log.info("{}", orderPlacement);
         orderPlacement.orders().stream().parallel().forEach(orderDTO -> orderService.addOrder(orderDTO, orderPlacement.portfolio(), orderPlacement.startTime().plusHours(8L), orderPlacement.endTime().plusHours(8L)));
+        //For crown strategy only
+        if (portfolioService.getPortfolio(orderPlacement.portfolio()).getTakeProfitStopLoss()){
+            positionBookForCrownRepo.deleteByPortfolioName(orderPlacement.portfolio());
+            List<PositionBookForCrown> positionBook = orderPlacement.orders().stream().map(orderDTO -> {
+                PositionBookForCrown positionBookForCrown = new PositionBookForCrown();
+                positionBookForCrown.setPortfolioName(orderPlacement.portfolio());
+                positionBookForCrown.setSecurityCode(orderDTO.securityCode());
+                positionBookForCrown.setSecurityShare(orderDTO.share());
+                positionBookForCrown.setSecurityName(orderDTO.securityName());
+                return positionBookForCrown;
+            }).toList();
+            positionBookForCrownRepo.saveAll(positionBook);
+        }
+
     }
 
     @GetMapping("order")

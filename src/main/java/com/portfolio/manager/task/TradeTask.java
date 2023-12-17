@@ -1,6 +1,7 @@
 package com.portfolio.manager.task;
 
 import com.portfolio.manager.domain.*;
+import com.portfolio.manager.domain.strategy_specific.PositionBookForCrown;
 import com.portfolio.manager.dto.BidAskBrokerDTO;
 import com.portfolio.manager.dto.OrderDTO;
 import com.portfolio.manager.dto.PositionIntegrateDTO;
@@ -8,6 +9,7 @@ import com.portfolio.manager.dto.TradeDTO;
 import com.portfolio.manager.integration.MarketDataService;
 import com.portfolio.manager.integration.OrderPlacementService;
 import com.portfolio.manager.repository.OrderRepo;
+import com.portfolio.manager.repository.PositionBookForCrownRepo;
 import com.portfolio.manager.service.AlgoService;
 import com.portfolio.manager.service.OrderService;
 import com.portfolio.manager.service.PortfolioService;
@@ -18,6 +20,7 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
@@ -46,6 +49,9 @@ public class TradeTask {
     @Resource
     OrderPlacementService orderPlacementService;
 
+    @Resource
+    PositionBookForCrownRepo positionBookForCrownRepo;
+
     BigDecimal takeProfit = new BigDecimal("1.075");
 
     BigDecimal stopLoss = new BigDecimal("0.975");
@@ -65,7 +71,6 @@ public class TradeTask {
                 if (!securityCodes.isEmpty()) {
                     Map<String, BidAskBrokerDTO> bidAsks = marketDataService.getBidAsk(securityCodes.stream().toList()).stream().collect(Collectors.toMap(BidAskBrokerDTO::securityCode, Function.identity()));
                     orders.forEach(order -> {
-//                        List<SubOrder> subOrders = order.getSubOrders().stream().filter(subOrder -> this.isBetween(subOrder.getStartTime(), subOrder.getEndTime()) && subOrder.getRemainingShare() > 0).toList();
                         List<SubOrder> subOrders = order.getSubOrders().stream().filter(subOrder -> this.isBetween(subOrder.getStartTime(), subOrder.getEndTime()) && subOrder.getRemainingShare() > 0).toList();
                         if (!subOrders.isEmpty()) {
                             subOrders.stream().parallel().forEach(subOrder -> {
@@ -93,27 +98,48 @@ public class TradeTask {
         });
     }
 
+    @Scheduled(cron = "0 56 14 ? * MON-FRI")
+    public void buyBackForCrown() {
+        portfolioService.listPortfolio().stream().filter(Portfolio::getTakeProfitStopLoss
+        ).toList().forEach(portfolio -> {
+            List<PositionBookForCrown> positionBook = positionBookForCrownRepo.findByPortfolioName(portfolio.getName());
+            Map<String, Position> position = portfolioService.listPosition(portfolio.getName()).stream().collect(Collectors.toMap(Position::getSecurityCode, Function.identity()));
+            positionBook.stream().parallel().forEach(positionBookForCrown -> {
+                if (position.get(positionBookForCrown.getSecurityCode()) == null) {
+                    log.warn("Buy back hit: {}", positionBookForCrown);
+                    OrderDTO orderDTO = new OrderDTO(Direction.买入, positionBookForCrown.getSecurityShare(), positionBookForCrown.getSecurityName(), positionBookForCrown.getSecurityCode(), 0.0d);
+                    orderService.addOrder(orderDTO, portfolio.getName(), LocalDateTime.now(), LocalDateTime.now().plusMinutes(1L));
+                } else if (position.get(positionBookForCrown.getSecurityCode()).getSecurityShare().compareTo(positionBookForCrown.getSecurityShare()) < 0) {
+                    log.warn("Buy back hit: {}, difference: {}", positionBookForCrown, positionBookForCrown.getSecurityShare() - position.get(positionBookForCrown.getSecurityCode()).getSecurityShare());
+                }
+            });
+
+        });
+    }
+
     @Scheduled(fixedDelay = 6000L)
     public void autoTrade() {
         if (!isTradeTime()) {
             return;
         }
         portfolioService.listPortfolio().stream().filter(Portfolio::getTakeProfitStopLoss
-        ).parallel().forEach(portfolio -> {
+        ).toList().stream().parallel().forEach(portfolio -> {
             List<Position> positions = portfolioService.listPosition(portfolio.getName());
             List<String> codes = positions.stream().map(Position::getSecurityCode).toList();
-            marketDataService.getBidAsk(codes).forEach(
-                    bidAskBrokerDTO -> {
-                        if (BigDecimal.valueOf(bidAskBrokerDTO.bidPrice1()).divide(BigDecimal.valueOf(bidAskBrokerDTO.lastClose()), 4, RoundingMode.HALF_EVEN).compareTo(takeProfit) >= 0 ||
-                                BigDecimal.valueOf(bidAskBrokerDTO.askPrice1()).divide(BigDecimal.valueOf(bidAskBrokerDTO.lastClose()), 4, RoundingMode.HALF_EVEN).compareTo(stopLoss) <= 0) {
-                            List<OrderDTO> orders = orderService.sell(positions.stream().filter(position -> position.getSecurityCode().equals(bidAskBrokerDTO.securityCode())).toList());
-                            if (!orders.isEmpty()) {
-                                log.warn("BidAsk hit: {}", bidAskBrokerDTO);
-                                orderService.addOrder(orders.get(0), portfolio.getName(), LocalDateTime.now(), LocalDateTime.now().plusMinutes(1L));
+            if (!codes.isEmpty()) {
+                marketDataService.getBidAsk(codes).forEach(
+                        bidAskBrokerDTO -> {
+                            if (BigDecimal.valueOf(bidAskBrokerDTO.bidPrice1()).divide(BigDecimal.valueOf(bidAskBrokerDTO.lastClose()), 4, RoundingMode.HALF_EVEN).compareTo(takeProfit) >= 0 ||
+                                    BigDecimal.valueOf(bidAskBrokerDTO.askPrice1()).divide(BigDecimal.valueOf(bidAskBrokerDTO.lastClose()), 4, RoundingMode.HALF_EVEN).compareTo(stopLoss) <= 0) {
+                                List<OrderDTO> orders = orderService.sell(positions.stream().filter(position -> position.getSecurityCode().equals(bidAskBrokerDTO.securityCode())).toList());
+                                if (!orders.isEmpty()) {
+                                    log.warn("BidAsk hit: {}", bidAskBrokerDTO);
+                                    orderService.addOrder(orders.get(0), portfolio.getName(), LocalDateTime.now(), LocalDateTime.now().plusMinutes(1L));
+                                }
                             }
                         }
-                    }
-            );
+                );
+            }
 
         });
     }
@@ -185,7 +211,9 @@ public class TradeTask {
     }
 
     private boolean isTradeTime() {
-        LocalTime now = LocalTime.now();
-        return !now.isBefore(LocalTime.of(9, 30, 0)) && !now.isAfter(LocalTime.of(14, 57, 0));
+        LocalDateTime now = LocalDateTime.now();
+        return !now.toLocalTime().isBefore(LocalTime.of(9, 30, 0)) && !now.toLocalTime().isAfter(LocalTime.of(14, 55, 0))
+                && !now.toLocalDate().getDayOfWeek().equals(DayOfWeek.SATURDAY) && !now.toLocalDate().getDayOfWeek().equals(DayOfWeek.SUNDAY);
     }
+
 }
