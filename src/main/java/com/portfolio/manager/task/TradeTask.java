@@ -98,7 +98,7 @@ public class TradeTask {
         });
     }
 
-    @Scheduled(cron = "0 56 14 ? * MON-FRI")
+    @Scheduled(cron = "0 50 14 ? * MON-FRI")
     public void buyBackForCrown() {
         portfolioService.listPortfolio().stream().filter(Portfolio::getTakeProfitStopLoss
         ).toList().forEach(portfolio -> {
@@ -108,7 +108,7 @@ public class TradeTask {
                 if (position.get(positionBookForCrown.getSecurityCode()) == null) {
                     log.warn("Buy back hit: {}", positionBookForCrown);
                     OrderDTO orderDTO = new OrderDTO(Direction.买入, positionBookForCrown.getSecurityShare(), positionBookForCrown.getSecurityName(), positionBookForCrown.getSecurityCode(), 0.0d);
-                    orderService.addOrder(orderDTO, portfolio.getName(), LocalDateTime.now(), LocalDateTime.now().plusMinutes(1L));
+                    orderService.addOrder(orderDTO, portfolio.getName(), LocalDateTime.now(), LocalDateTime.now().plusMinutes(5L));
                 } else if (position.get(positionBookForCrown.getSecurityCode()).getSecurityShare().compareTo(positionBookForCrown.getSecurityShare()) < 0) {
                     log.warn("Buy back hit: {}, difference: {}", positionBookForCrown, positionBookForCrown.getSecurityShare() - position.get(positionBookForCrown.getSecurityCode()).getSecurityShare());
                 }
@@ -212,7 +212,7 @@ public class TradeTask {
 
     private boolean isTradeTime() {
         LocalDateTime now = LocalDateTime.now();
-        return !now.toLocalTime().isBefore(LocalTime.of(9, 30, 0)) && !now.toLocalTime().isAfter(LocalTime.of(14, 55, 0))
+        return !now.toLocalTime().isBefore(LocalTime.of(9, 30, 0)) && !now.toLocalTime().isAfter(LocalTime.of(14, 50, 0))
                 && !now.toLocalDate().getDayOfWeek().equals(DayOfWeek.SATURDAY) && !now.toLocalDate().getDayOfWeek().equals(DayOfWeek.SUNDAY);
     }
 
