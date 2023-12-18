@@ -37,7 +37,7 @@ public class AlgoServiceImpl implements AlgoService {
 
         List<SubOrder> subOrders = new ArrayList<>();
         long multiple = order.getSecurityCode().startsWith("11") || order.getSecurityCode().startsWith("12") ? Constant.convertibleBondMultiple : Constant.stockMultiple;
-        splitEven(subOrders, BigDecimal.valueOf(order.getPlannedShare()).divide(BigDecimal.valueOf(multiple), RoundingMode.UNNECESSARY).longValue(), minutes);
+        splitEven(subOrders, BigDecimal.valueOf(order.getPlannedShare()).divide(BigDecimal.valueOf(multiple), RoundingMode.UNNECESSARY).longValue(), minutes, multiple);
         for (int i = 0; i < subOrders.size(); i++) {
             subOrders.get(i).setStartTime(startTime.plusMinutes(i));
             subOrders.get(i).setEndTime(startTime.plusMinutes(i + 1));
@@ -85,15 +85,15 @@ public class AlgoServiceImpl implements AlgoService {
         subOrderRepo.save(order);
     }
 
-    private void splitEven(List<SubOrder> subOrders, Long remainingAmount, Long remainingMinutes) {
+    private void splitEven(List<SubOrder> subOrders, Long remainingAmount, Long remainingMinutes, Long multiple) {
         if (remainingMinutes == 0 || remainingAmount == 0) {
             return;
         }
         long amount = BigDecimal.valueOf(remainingAmount).divide(BigDecimal.valueOf(remainingMinutes), RoundingMode.UP).longValue();
         SubOrder subOrder = new SubOrder();
-        subOrder.setPlannedShare(amount * 100);
-        subOrder.setRemainingShare(amount * 100);
+        subOrder.setPlannedShare(amount * multiple);
+        subOrder.setRemainingShare(amount * multiple);
         subOrders.add(subOrder);
-        splitEven(subOrders, remainingAmount - amount, remainingMinutes - 1);
+        splitEven(subOrders, remainingAmount - amount, remainingMinutes - 1, multiple);
     }
 }
