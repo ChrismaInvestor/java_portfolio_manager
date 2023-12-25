@@ -56,7 +56,7 @@ public class TradeTask {
 
     BigDecimal stopLoss = new BigDecimal("0.975");
 
-    @Scheduled(fixedDelay = 3000L)
+    @Scheduled(fixedDelay = 6000L)
     public void placeOrder() {
         portfolioService.listPortfolioDTO().forEach(portfolioDTO -> {
             List<Order> orders = orderService.listOrders(portfolioDTO.name());

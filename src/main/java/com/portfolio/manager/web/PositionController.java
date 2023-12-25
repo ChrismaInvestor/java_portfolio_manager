@@ -1,5 +1,6 @@
 package com.portfolio.manager.web;
 
+import com.portfolio.manager.domain.Direction;
 import com.portfolio.manager.domain.Position;
 import com.portfolio.manager.domain.strategy_specific.PositionBookForCrown;
 import com.portfolio.manager.dto.*;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -53,17 +55,34 @@ public class PositionController {
         log.info("{}", orderPlacement);
         orderPlacement.orders().stream().parallel().forEach(orderDTO -> orderService.addOrder(orderDTO, orderPlacement.portfolio(), orderPlacement.startTime().plusHours(8L), orderPlacement.endTime().plusHours(8L)));
         //For crown strategy only
-        if (portfolioService.getPortfolio(orderPlacement.portfolio()).getTakeProfitStopLoss()){
-            positionBookForCrownRepo.deleteByPortfolioName(orderPlacement.portfolio());
-            List<PositionBookForCrown> positionBook = orderPlacement.orders().stream().map(orderDTO -> {
-                PositionBookForCrown positionBookForCrown = new PositionBookForCrown();
-                positionBookForCrown.setPortfolioName(orderPlacement.portfolio());
-                positionBookForCrown.setSecurityCode(orderDTO.securityCode());
-                positionBookForCrown.setSecurityShare(orderDTO.share());
-                positionBookForCrown.setSecurityName(orderDTO.securityName());
-                return positionBookForCrown;
-            }).toList();
-            positionBookForCrownRepo.saveAll(positionBook);
+        if (portfolioService.getPortfolio(orderPlacement.portfolio()).getTakeProfitStopLoss()) {
+            Set<String> codes = positionBookForCrownRepo.findByPortfolioName(orderPlacement.portfolio()).stream().map(PositionBookForCrown::getSecurityCode).collect(Collectors.toSet());
+            orderPlacement.orders().forEach(order -> {
+                if (!codes.contains(order.securityCode())) {
+                    PositionBookForCrown positionBookForCrown = new PositionBookForCrown();
+                    positionBookForCrown.setPortfolioName(orderPlacement.portfolio());
+                    positionBookForCrown.setSecurityCode(order.securityCode());
+                    positionBookForCrown.setSecurityShare(order.share());
+                    positionBookForCrown.setSecurityName(order.securityName());
+                    positionBookForCrownRepo.save(positionBookForCrown);
+                } else {
+                    Optional<PositionBookForCrown> position = positionBookForCrownRepo.findByPortfolioNameAndSecurityCode(orderPlacement.portfolio(), order.securityCode());
+                    if (position.isPresent()) {
+                        PositionBookForCrown p = position.get();
+                        if (order.buyOrSell().equals(Direction.买入)) {
+                            p.setSecurityShare(p.getSecurityShare() + order.share());
+                            positionBookForCrownRepo.save(p);
+                        } else if (order.buyOrSell().equals(Direction.卖出)) {
+                            p.setSecurityShare(p.getSecurityShare() - order.share());
+                            if (p.getSecurityShare().compareTo(0L) <= 0) {
+                                positionBookForCrownRepo.delete(p);
+                            } else {
+                                positionBookForCrownRepo.save(p);
+                            }
+                        }
+                    }
+                }
+            });
         }
 
     }

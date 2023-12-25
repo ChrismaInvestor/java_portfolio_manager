@@ -7,11 +7,14 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface PositionBookForCrownRepo extends JpaRepository<PositionBookForCrown, Long> {
 
     List<PositionBookForCrown> findByPortfolioName(String portfolioName);
+
+    Optional<PositionBookForCrown> findByPortfolioNameAndSecurityCode(String portfolioName, String securityCode);
 
     @Transactional
     void deleteByPortfolioName(String portfolioName);
