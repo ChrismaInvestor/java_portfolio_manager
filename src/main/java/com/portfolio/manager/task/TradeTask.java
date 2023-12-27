@@ -117,7 +117,7 @@ public class TradeTask {
         });
     }
 
-    @Scheduled(fixedDelay = 6000L)
+    @Scheduled(fixedDelay = 1000L)
     public void autoTrade() {
         if (!isTradeTime()) {
             return;
