@@ -11,6 +11,7 @@ import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -46,6 +47,15 @@ public class PortfolioServiceImpl implements PortfolioService {
     @Override
     public void updateDynamics(Dynamics dynamics) {
         dynamicsRepo.save(dynamics);
+    }
+
+    @Override
+    public void updateDynamics(Double todayTradeTotal, Portfolio portfolio) {
+        Dynamics dynamics = this.getDynamics(portfolio);
+        dynamics.setCash(BigDecimal.valueOf(dynamics.getLastDayCash()).subtract(BigDecimal.valueOf(todayTradeTotal)).doubleValue());
+        dynamics.setSecurityMarketValue(portfolio.getPositions().stream().mapToDouble(Position::getMarketValue).sum());
+        dynamics.setTotalMarketValue(BigDecimal.valueOf(dynamics.getCash()).add(BigDecimal.valueOf(dynamics.getSecurityMarketValue())).doubleValue());
+        this.updateDynamics(dynamics);
     }
 
     @Override

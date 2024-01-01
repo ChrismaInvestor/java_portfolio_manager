@@ -64,6 +64,8 @@ public class PositionController {
                     positionBookForCrown.setSecurityCode(order.securityCode());
                     positionBookForCrown.setSecurityShare(order.share());
                     positionBookForCrown.setSecurityName(order.securityName());
+                    positionBookForCrown.setSellLock(false);
+                    positionBookForCrown.setBuyBack(false);
                     positionBookForCrownRepo.save(positionBookForCrown);
                 } else {
                     Optional<PositionBookForCrown> position = positionBookForCrownRepo.findByPortfolioNameAndSecurityCode(orderPlacement.portfolio(), order.securityCode());

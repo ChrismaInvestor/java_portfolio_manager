@@ -22,4 +22,8 @@ public class PositionBookForCrown extends BaseEntity {
     private String securityName;
 
     private String portfolioName;
+
+    private Boolean sellLock;
+
+    private Boolean buyBack;
 }

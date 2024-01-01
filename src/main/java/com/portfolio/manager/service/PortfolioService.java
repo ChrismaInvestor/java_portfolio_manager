@@ -16,6 +16,8 @@ public interface PortfolioService {
 
     void updateDynamics(Dynamics dynamics);
 
+    void updateDynamics(Double todayTradeTotal, Portfolio portfolio);
+
     Double getCash(String portfolioName);
 
     List<PortfolioDTO> listPortfolioDTO();
