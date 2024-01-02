@@ -5,7 +5,6 @@ import com.portfolio.manager.domain.*;
 import com.portfolio.manager.dto.OrderDTO;
 import com.portfolio.manager.dto.OrderInProgressDTO;
 import com.portfolio.manager.repository.OrderRepo;
-import com.portfolio.manager.repository.TradeRepo;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -34,9 +33,6 @@ public class OrderServiceImpl implements OrderService {
 
     @Resource
     private AlgoService algoService;
-
-    @Resource
-    private TradeRepo tradeRepo;
 
 
     @Override

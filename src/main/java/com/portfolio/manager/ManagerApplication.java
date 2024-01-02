@@ -7,9 +7,6 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.HashSet;
-import java.util.Set;
-
 @EnableJpaAuditing
 @SpringBootApplication
 @EnableScheduling
