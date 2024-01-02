@@ -1,9 +1,7 @@
 package com.portfolio.manager.service;
 
 import com.portfolio.manager.constant.Constant;
-import com.portfolio.manager.domain.Direction;
-import com.portfolio.manager.domain.Order;
-import com.portfolio.manager.domain.Position;
+import com.portfolio.manager.domain.*;
 import com.portfolio.manager.dto.OrderDTO;
 import com.portfolio.manager.dto.OrderInProgressDTO;
 import com.portfolio.manager.repository.OrderRepo;
@@ -114,9 +112,13 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public Double getCost(Long orderId) {
-        return tradeRepo.findByOrderId(orderId).stream().mapToDouble(trade ->
-                BigDecimal.valueOf(trade.getPrice()).multiply(BigDecimal.valueOf(trade.getVolume())).setScale(2, RoundingMode.HALF_DOWN).doubleValue()
-        ).sum();
+    public void updateOrders(Portfolio portfolio) {
+        List<Order> ordersToUpdate = this.listOrders(portfolio.getName());
+        ordersToUpdate.forEach(order -> {
+            long sum = order.getSubOrders().stream().mapToLong(SubOrder::getRemainingShare).sum();
+            order.setRemainingShare(sum);
+        });
+        orderRepo.saveAll(ordersToUpdate);
     }
+
 }

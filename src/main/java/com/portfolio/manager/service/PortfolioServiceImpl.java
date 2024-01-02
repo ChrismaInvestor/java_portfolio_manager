@@ -3,9 +3,14 @@ package com.portfolio.manager.service;
 import com.portfolio.manager.domain.Dynamics;
 import com.portfolio.manager.domain.Portfolio;
 import com.portfolio.manager.domain.Position;
+import com.portfolio.manager.domain.strategy_specific.PositionBookForCrown;
 import com.portfolio.manager.dto.PortfolioDTO;
+import com.portfolio.manager.dto.PositionIntegrateDTO;
+import com.portfolio.manager.dto.TradeDTO;
+import com.portfolio.manager.integration.OrderPlacementService;
 import com.portfolio.manager.repository.DynamicsRepo;
 import com.portfolio.manager.repository.PortfolioRepo;
+import com.portfolio.manager.repository.PositionBookForCrownRepo;
 import com.portfolio.manager.repository.PositionRepo;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -13,8 +18,8 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -28,6 +33,12 @@ public class PortfolioServiceImpl implements PortfolioService {
 
     @Resource
     private PositionRepo positionRepo;
+
+    @Resource
+    PositionBookForCrownRepo positionBookForCrownRepo;
+
+    @Resource
+    OrderPlacementService orderPlacementService;
 
     @Override
     public List<Position> listPosition(String portfolioName) {
@@ -88,27 +99,62 @@ public class PortfolioServiceImpl implements PortfolioService {
     }
 
     @Override
-    public void appendPositions(PortfolioDTO portfolioDTO, List<Position> positions) {
-        Portfolio portfolio = portfolioRepo.findByName(portfolioDTO.name());
-        if (!portfolio.getPositions().isEmpty()) {
-            Map<String, Position> map = positions.stream().collect(Collectors.toMap(Position::getSecurityCode, Function.identity()));
-            portfolio.getPositions().forEach(position -> {
-                if (map.get(position.getSecurityCode()) != null) {
-                    position.setCost(map.get(position.getSecurityCode()).getCost());
-                    position.setSecurityShare(map.get(position.getSecurityCode()).getSecurityShare());
-                    positionRepo.save(position);
-                }
-            });
-        } else {
-            positionRepo.saveAll(positions);
-            portfolio.setPositions(positions);
-        }
-        portfolioRepo.save(portfolio);
+    public void updatePosition(Position position) {
+        positionRepo.save(position);
     }
 
     @Override
-    public void updatePosition(Position position) {
-        positionRepo.save(position);
+    public void updatePosition(Portfolio portfolio) {
+        Set<String> codes = this.listPosition(portfolio.getName()).stream().map(Position::getSecurityCode).collect(Collectors.toSet());
+        codes.addAll(positionBookForCrownRepo.findByPortfolioName(portfolio.getName()).stream().map(PositionBookForCrown::getSecurityCode).collect(Collectors.toSet()));
+
+        codes.forEach(code -> {
+            PositionIntegrateDTO positionOnBroker = orderPlacementService.checkPosition(code);
+            if (positionOnBroker != null) {
+                if (positionOnBroker.vol() != null) {
+                    Optional<Position> existingPosition = portfolio.getPositions().stream().filter(p -> p.getSecurityCode().equals(code)).findFirst();
+                    if (existingPosition.isEmpty()) {
+                        // Add position
+                        Position currentPosition = new Position();
+                        currentPosition.setSecurityCode(code);
+                        currentPosition.setSecurityShare(Long.valueOf(positionOnBroker.vol()));
+                        currentPosition.setCost(BigDecimal.valueOf(positionOnBroker.unitCost()).multiply(BigDecimal.valueOf(currentPosition.getSecurityShare())).doubleValue());
+                        currentPosition.setMarketValue(positionOnBroker.marketValue());
+                        this.updatePosition(currentPosition);
+                        portfolio.getPositions().add(currentPosition);
+                    } else {
+                        // Update position
+                        Position currentPosition = existingPosition.get();
+                        currentPosition.setSecurityShare(Long.valueOf(positionOnBroker.vol()));
+                        currentPosition.setCost(BigDecimal.valueOf(positionOnBroker.unitCost()).multiply(BigDecimal.valueOf(currentPosition.getSecurityShare())).doubleValue());
+                        currentPosition.setMarketValue(positionOnBroker.marketValue());
+                        this.updatePosition(currentPosition);
+                    }
+                } else {
+                    // Remove positions
+                    Optional<Position> existingPosition = portfolio.getPositions().stream().filter(p -> p.getSecurityCode().equals(code)).findFirst();
+                    if (existingPosition.isPresent()) {
+                        portfolio.setPositions(portfolio.getPositions().stream().filter(p -> !p.getSecurityCode().equals(code)).toList());
+                        this.updatePortfolio(portfolio);
+                        this.deletePosition(existingPosition.get());
+                        // Turn the auto mark to True if stop loss or take profit occurs
+                        Optional<PositionBookForCrown> book = positionBookForCrownRepo.findByPortfolioNameAndSecurityCode(portfolio.getName(), existingPosition.get().getSecurityCode());
+                        book.ifPresent(positionBookForCrown -> {
+                            positionBookForCrown.setSellLock(false);
+                            positionBookForCrown.setBuyBack(false);
+                            positionBookForCrownRepo.save(positionBookForCrown);
+                        });
+                    }
+                }
+            }
+        });
+
+        //Update dynamics
+        double todayTradeTotal = orderPlacementService.listTodayTrades().stream().filter(trade ->
+                codes.contains(trade.securityCode())
+        ).mapToDouble(TradeDTO::amount).sum();
+        this.updateDynamics(todayTradeTotal, portfolio);
+        this.updatePortfolio(portfolio);
     }
 
     @Override

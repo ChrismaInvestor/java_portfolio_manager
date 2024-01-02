@@ -23,12 +23,11 @@ public interface PortfolioService {
     List<PortfolioDTO> listPortfolioDTO();
     List<Portfolio> listPortfolio();
 
-
     void addPortfolio(PortfolioDTO portfolioDTO);
 
-    void appendPositions(PortfolioDTO portfolioDTO, List<Position> positions);
-
     void updatePosition(Position position);
+
+    void updatePosition(Portfolio portfolio);
 
     void deletePosition(Position position);
 

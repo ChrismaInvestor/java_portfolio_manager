@@ -65,21 +65,6 @@ public class AlgoServiceImpl implements AlgoService {
 //        执行下单结束
         trade.setPrice(price);
         trade.setVolume(Long.valueOf(vol));
-//        if (order.getBuyOrSell().equals("买入")) {
-//            trade.setPrice(bidAskDTO.bidPrice().get(0));
-//            if (bidAskDTO.bidVol().get(0).longValue() >= order.getRemainingShare()) {
-//                trade.setVolume(order.getRemainingShare());
-//            } else {
-//                trade.setVolume(bidAskDTO.bidVol().get(0).longValue());
-//            }
-//        } else {
-//            trade.setPrice(bidAskDTO.askPrice().get(0));
-//            if (bidAskDTO.askVol().get(0).longValue() >= order.getRemainingShare()) {
-//                trade.setVolume(order.getRemainingShare());
-//            } else {
-//                trade.setVolume(bidAskDTO.askVol().get(0).longValue());
-//            }
-//        }
         order.setRemainingShare(order.getRemainingShare() - trade.getVolume());
         tradeRepo.save(trade);
         subOrderRepo.save(order);
