@@ -12,6 +12,7 @@ import com.portfolio.manager.repository.DynamicsRepo;
 import com.portfolio.manager.repository.PortfolioRepo;
 import com.portfolio.manager.repository.PositionBookForCrownRepo;
 import com.portfolio.manager.repository.PositionRepo;
+import com.portfolio.manager.task.TradeTask;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -110,7 +111,7 @@ public class PortfolioServiceImpl implements PortfolioService {
 
         codes.forEach(code -> {
             PositionIntegrateDTO positionOnBroker = orderPlacementService.checkPosition(code);
-            if (positionOnBroker != null) {
+            if (positionOnBroker != null && TradeTask.isOrderTime()) {
                 if (positionOnBroker.vol() != null) {
                     Optional<Position> existingPosition = portfolio.getPositions().stream().filter(p -> p.getSecurityCode().equals(code)).findFirst();
                     if (existingPosition.isEmpty()) {

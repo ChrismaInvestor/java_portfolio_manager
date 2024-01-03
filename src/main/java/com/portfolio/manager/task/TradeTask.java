@@ -223,4 +223,9 @@ public class TradeTask {
                 && !now.toLocalDate().getDayOfWeek().equals(DayOfWeek.SATURDAY) && !now.toLocalDate().getDayOfWeek().equals(DayOfWeek.SUNDAY);
     }
 
+    public static boolean isOrderTime(){
+        LocalDateTime now = LocalDateTime.now();
+        return !now.toLocalTime().isBefore(LocalTime.of(9, 26, 0)) && !now.toLocalTime().isAfter(LocalTime.of(23, 50, 0));
+    }
+
 }
