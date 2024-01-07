@@ -105,7 +105,7 @@ public class PortfolioServiceImpl implements PortfolioService {
     }
 
     @Override
-    public void updatePosition(Portfolio portfolio) {
+    public void syncUpPositions(Portfolio portfolio) {
         Set<String> codes = this.listPosition(portfolio.getName()).stream().map(Position::getSecurityCode).collect(Collectors.toSet());
         codes.addAll(positionBookForCrownRepo.findByPortfolioName(portfolio.getName()).stream().map(PositionBookForCrown::getSecurityCode).collect(Collectors.toSet()));
 

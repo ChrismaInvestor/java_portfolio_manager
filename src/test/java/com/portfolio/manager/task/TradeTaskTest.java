@@ -39,7 +39,7 @@ public class TradeTaskTest {
         positionBook.stream().parallel().forEach(positionBookForCrown -> {
             if (positionBookForCrown.getBuyBack()) {
                 if (position.get(positionBookForCrown.getSecurityCode()) == null) {
-                    positionBookForCrown.setSecurityShare(Util.calVolume(positionBookForCrown.getSecurityShare(), buyBackDiscount, Constant.convertibleBondMultiple));
+                    positionBookForCrown.setSecurityShare(Util.calVolume(positionBookForCrown.getSecurityShare(), buyBackDiscount, Constant.CONVERTIBLE_BOND_MULTIPLE));
                     log.warn("Buy back hit: {}", positionBookForCrown);
                     OrderDTO orderDTO = new OrderDTO(Direction.买入, positionBookForCrown.getSecurityShare(), positionBookForCrown.getSecurityName(), positionBookForCrown.getSecurityCode(), 0.0d);
                     log.warn("new order: {}", orderDTO);

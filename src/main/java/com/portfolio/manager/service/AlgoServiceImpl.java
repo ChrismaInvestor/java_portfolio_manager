@@ -36,7 +36,7 @@ public class AlgoServiceImpl implements AlgoService {
         long minutes = Duration.between(startTime, endTime).toMinutes();
 
         List<SubOrder> subOrders = new ArrayList<>();
-        long multiple = order.getSecurityCode().startsWith("11") || order.getSecurityCode().startsWith("12") ? Constant.convertibleBondMultiple : Constant.stockMultiple;
+        long multiple = order.getSecurityCode().startsWith("11") || order.getSecurityCode().startsWith("12") ? Constant.CONVERTIBLE_BOND_MULTIPLE : Constant.STOCK_MULTIPLE;
         splitEven(subOrders, BigDecimal.valueOf(order.getPlannedShare()).divide(BigDecimal.valueOf(multiple), RoundingMode.UNNECESSARY).longValue(), minutes, multiple);
         for (int i = 0; i < subOrders.size(); i++) {
             subOrders.get(i).setStartTime(startTime.plusMinutes(i));

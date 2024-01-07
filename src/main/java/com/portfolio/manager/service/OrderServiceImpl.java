@@ -48,7 +48,7 @@ public class OrderServiceImpl implements OrderService {
         List<OrderDTO> orders = new ArrayList<>();
         Map<String, Position> holdingCodes = holdings.stream().collect(Collectors.toMap(Position::getSecurityCode, Function.identity()));
         securityCodes.forEach(code -> {
-            long multiple = code.startsWith("11") || code.startsWith("12") ? Constant.convertibleBondMultiple : Constant.stockMultiple;
+            long multiple = code.startsWith("11") || code.startsWith("12") ? Constant.CONVERTIBLE_BOND_MULTIPLE : Constant.STOCK_MULTIPLE;
             String internalCode = code.split("\\.")[0];
             BigDecimal price = BigDecimal.valueOf(priceService.getLatestPrice(internalCode));
             BigDecimal divide = average.divide(price.multiply(BigDecimal.valueOf(multiple)), RoundingMode.HALF_EVEN);
@@ -96,7 +96,7 @@ public class OrderServiceImpl implements OrderService {
         List<Order> rawOrders = orderRepo.findByPortfolioName(portfolio).stream().filter(order -> order.getRemainingShare() > 0L).toList();
         return rawOrders.stream().map(rawOrder -> {
             BigDecimal plannedShare = BigDecimal.valueOf(rawOrder.getPlannedShare());
-            long multiple = rawOrder.getSecurityCode().startsWith("11") || rawOrder.getSecurityCode().startsWith("12") ? Constant.convertibleBondMultiple : Constant.stockMultiple;
+            long multiple = rawOrder.getSecurityCode().startsWith("11") || rawOrder.getSecurityCode().startsWith("12") ? Constant.CONVERTIBLE_BOND_MULTIPLE : Constant.STOCK_MULTIPLE;
             int ratio = BigDecimal.valueOf(rawOrder.getPlannedShare() - rawOrder.getRemainingShare()).divide(plannedShare, 4, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(multiple)).intValue();
             return new OrderInProgressDTO(rawOrder.getBuyOrSell().name(), securityService.getSecurityName(rawOrder.getSecurityCode()), rawOrder.getSecurityCode(), ratio);
         }).toList();

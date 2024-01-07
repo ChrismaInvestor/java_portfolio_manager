@@ -42,7 +42,7 @@ public class OrderPlacementServiceImpl implements OrderPlacementService {
         try {
             orderId = restTemplate.exchange("http://" + hostIP + "/sell/{code}/{price}/{vol}", HttpMethod.GET, null, new ParameterizedTypeReference<>() {
             }, code, price, vol);
-            log.info("code: {}, orderId: {}", code, orderId);
+            log.info("code: {}, orderId: {}", code, orderId.getBody());
             return orderId.getBody();
         } catch (Exception e) {
             log.error("Buy query: {}", e.getMessage());
