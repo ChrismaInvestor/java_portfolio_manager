@@ -1,5 +1,6 @@
 package com.portfolio.manager.task;
 
+import com.portfolio.manager.constant.Constant;
 import com.portfolio.manager.domain.*;
 import com.portfolio.manager.domain.strategy_specific.PositionBookForCrown;
 import com.portfolio.manager.dto.BidAskBrokerDTO;
@@ -9,6 +10,7 @@ import com.portfolio.manager.repository.PositionBookForCrownRepo;
 import com.portfolio.manager.service.AlgoService;
 import com.portfolio.manager.service.OrderService;
 import com.portfolio.manager.service.PortfolioService;
+import com.portfolio.manager.util.Util;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -95,17 +97,23 @@ public class TradeTask {
 
     @Scheduled(cron = "0 50 14 ? * MON-FRI")
     public void buyBackForCrown() {
+        double buyBackDiscount = 0.5d;
         portfolioService.listPortfolio().stream().filter(Portfolio::getTakeProfitStopLoss
         ).toList().forEach(portfolio -> {
             List<PositionBookForCrown> positionBook = positionBookForCrownRepo.findByPortfolioName(portfolio.getName());
             Map<String, Position> position = portfolioService.listPosition(portfolio.getName()).stream().collect(Collectors.toMap(Position::getSecurityCode, Function.identity()));
             positionBook.stream().parallel().forEach(positionBookForCrown -> {
-                if (position.get(positionBookForCrown.getSecurityCode()) == null && positionBookForCrown.getBuyBack()) {
-                    log.warn("Buy back hit: {}", positionBookForCrown);
-                    OrderDTO orderDTO = new OrderDTO(Direction.买入, positionBookForCrown.getSecurityShare(), positionBookForCrown.getSecurityName(), positionBookForCrown.getSecurityCode(), 0.0d);
-                    orderService.addOrder(orderDTO, portfolio.getName(), LocalDateTime.now(), LocalDateTime.now().plusMinutes(5L));
-                } else if (position.get(positionBookForCrown.getSecurityCode()).getSecurityShare().compareTo(positionBookForCrown.getSecurityShare()) < 0) {
-                    log.warn("Buy back hit: {}, difference: {}", positionBookForCrown, positionBookForCrown.getSecurityShare() - position.get(positionBookForCrown.getSecurityCode()).getSecurityShare());
+                if (positionBookForCrown.getBuyBack()) {
+                    if (position.get(positionBookForCrown.getSecurityCode()) == null) {
+                        positionBookForCrown.setSecurityShare(Util.calVolume(positionBookForCrown.getSecurityShare(), buyBackDiscount, Constant.convertibleBondMultiple));
+                        log.warn("Buy back hit: {}", positionBookForCrown);
+                        OrderDTO orderDTO = new OrderDTO(Direction.买入, positionBookForCrown.getSecurityShare(), positionBookForCrown.getSecurityName(), positionBookForCrown.getSecurityCode(), 0.0d);
+                        orderService.addOrder(orderDTO, portfolio.getName(), LocalDateTime.now(), LocalDateTime.now().plusMinutes(5L));
+                    } else if (position.get(positionBookForCrown.getSecurityCode()).getSecurityShare().compareTo(positionBookForCrown.getSecurityShare()) < 0) {
+                        log.warn("Buy back hit: {}, difference: {}", positionBookForCrown, positionBookForCrown.getSecurityShare() - position.get(positionBookForCrown.getSecurityCode()).getSecurityShare());
+                        OrderDTO orderDTO = new OrderDTO(Direction.买入, positionBookForCrown.getSecurityShare() - position.get(positionBookForCrown.getSecurityCode()).getSecurityShare(), positionBookForCrown.getSecurityName(), positionBookForCrown.getSecurityCode(), 0.0d);
+                        orderService.addOrder(orderDTO, portfolio.getName(), LocalDateTime.now(), LocalDateTime.now().plusMinutes(5L));
+                    }
                 }
             });
 

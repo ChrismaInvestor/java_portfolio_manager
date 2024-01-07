@@ -142,7 +142,7 @@ public class PortfolioServiceImpl implements PortfolioService {
                         Optional<PositionBookForCrown> book = positionBookForCrownRepo.findByPortfolioNameAndSecurityCode(portfolio.getName(), existingPosition.get().getSecurityCode());
                         book.ifPresent(positionBookForCrown -> {
                             positionBookForCrown.setSellLock(false);
-                            positionBookForCrown.setBuyBack(false);
+//                            positionBookForCrown.setBuyBack(false);
                             positionBookForCrownRepo.save(positionBookForCrown);
                         });
                     }
