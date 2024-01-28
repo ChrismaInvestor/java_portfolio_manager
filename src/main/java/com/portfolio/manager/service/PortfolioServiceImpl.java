@@ -5,7 +5,6 @@ import com.portfolio.manager.domain.Portfolio;
 import com.portfolio.manager.domain.Position;
 import com.portfolio.manager.domain.strategy_specific.PositionBookForCrown;
 import com.portfolio.manager.dto.PortfolioDTO;
-import com.portfolio.manager.dto.PositionIntegrateDTO;
 import com.portfolio.manager.dto.TradeDTO;
 import com.portfolio.manager.integration.OrderPlacementService;
 import com.portfolio.manager.repository.DynamicsRepo;
