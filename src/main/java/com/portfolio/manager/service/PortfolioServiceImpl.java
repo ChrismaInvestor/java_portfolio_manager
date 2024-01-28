@@ -39,7 +39,7 @@ public class PortfolioServiceImpl implements PortfolioService {
     PositionBookForCrownRepo positionBookForCrownRepo;
 
     @Resource
-    OrderPlacementService orderPlacementService;
+    OrderPlacementService orderPlacemenIntegration;
 
     @Override
     public List<Position> listPosition(String portfolioName) {
@@ -105,12 +105,16 @@ public class PortfolioServiceImpl implements PortfolioService {
     }
 
     @Override
-    public void syncUpPositions(Portfolio portfolio) {
+    public void syncUpPositions(Portfolio portfolio, Set<String> securityCodesOfOrders) {
+        // 获取当前持仓的股票代码
         Set<String> codes = this.listPosition(portfolio.getName()).stream().map(Position::getSecurityCode).collect(Collectors.toSet());
+        // 增加PositionBook的股票代码
         codes.addAll(positionBookForCrownRepo.findByPortfolioName(portfolio.getName()).stream().map(PositionBookForCrown::getSecurityCode).collect(Collectors.toSet()));
+        // 增加order中当日的股票代码
+        codes.addAll(securityCodesOfOrders);
 
         codes.forEach(code -> {
-            PositionIntegrateDTO positionOnBroker = orderPlacementService.checkPosition(code);
+            var positionOnBroker = orderPlacemenIntegration.checkPosition(code);
             if (positionOnBroker != null && TradeTask.isOrderTime()) {
                 if (positionOnBroker.vol() != null) {
                     Optional<Position> existingPosition = portfolio.getPositions().stream().filter(p -> p.getSecurityCode().equals(code)).findFirst();
@@ -139,10 +143,9 @@ public class PortfolioServiceImpl implements PortfolioService {
                         this.updatePortfolio(portfolio);
                         this.deletePosition(existingPosition.get());
                         // Turn the auto mark to True if stop loss or take profit occurs
-                        Optional<PositionBookForCrown> book = positionBookForCrownRepo.findByPortfolioNameAndSecurityCode(portfolio.getName(), existingPosition.get().getSecurityCode());
-                        book.ifPresent(positionBookForCrown -> {
+                        var positionInBook = positionBookForCrownRepo.findByPortfolioNameAndSecurityCode(portfolio.getName(), existingPosition.get().getSecurityCode());
+                        positionInBook.ifPresent(positionBookForCrown -> {
                             positionBookForCrown.setSellLock(false);
-//                            positionBookForCrown.setBuyBack(false);
                             positionBookForCrownRepo.save(positionBookForCrown);
                         });
                     }
@@ -151,7 +154,7 @@ public class PortfolioServiceImpl implements PortfolioService {
         });
 
         //Update dynamics
-        double todayTradeTotal = orderPlacementService.listTodayTrades().stream().filter(trade ->
+        double todayTradeTotal = orderPlacemenIntegration.listTodayTrades().stream().filter(trade ->
                 codes.contains(trade.securityCode())
         ).mapToDouble(TradeDTO::amount).sum();
         this.updateDynamics(todayTradeTotal, portfolio);

@@ -108,6 +108,11 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    public List<Order> listPendingOrders(String portfolio) {
+        return orderRepo.findByPortfolioName(portfolio).stream().filter(order -> order.getRemainingShare() > 0).toList();
+    }
+
+    @Override
     public void updateOrders(Portfolio portfolio) {
         List<Order> ordersToUpdate = this.listOrders(portfolio.getName());
         ordersToUpdate.forEach(order -> {

@@ -6,6 +6,7 @@ import com.portfolio.manager.domain.Position;
 import com.portfolio.manager.dto.PortfolioDTO;
 
 import java.util.List;
+import java.util.Set;
 
 public interface PortfolioService {
     List<Position> listPosition(String portfolioName);
@@ -25,11 +26,11 @@ public interface PortfolioService {
 
     void addPortfolio(PortfolioDTO portfolioDTO);
 
+    void updatePortfolio(Portfolio portfolio);
+
     void updatePosition(Position position);
 
-    void syncUpPositions(Portfolio portfolio);
+    void syncUpPositions(Portfolio portfolio, Set<String> codesOfOrders);
 
     void deletePosition(Position position);
-
-    void updatePortfolio(Portfolio portfolio);
 }

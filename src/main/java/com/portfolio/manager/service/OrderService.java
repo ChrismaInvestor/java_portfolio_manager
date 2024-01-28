@@ -23,6 +23,8 @@ public interface OrderService {
 
     List<Order> listOrders(String portfolio);
 
+    List<Order> listPendingOrders(String portfolio);
+
     void updateOrders(Portfolio portfolio);
 
 }
