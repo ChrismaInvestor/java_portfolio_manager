@@ -53,9 +53,9 @@ public class OrderServiceImpl implements OrderService {
             BigDecimal price = BigDecimal.valueOf(priceService.getLatestPrice(internalCode));
             BigDecimal divide = average.divide(price.multiply(BigDecimal.valueOf(multiple)), RoundingMode.HALF_EVEN);
             BigDecimal min = divide.setScale(0, RoundingMode.DOWN);
-            BigDecimal max = divide.setScale(0, RoundingMode.UP);
-            maxTotal.add(max.multiply(price).multiply(BigDecimal.valueOf(multiple)));
-            minTotal.add(min.multiply(price).multiply(BigDecimal.valueOf(multiple)));
+//            BigDecimal max = divide.setScale(0, RoundingMode.UP);
+//            maxTotal.add(max.multiply(price).multiply(BigDecimal.valueOf(multiple)));
+//            minTotal.add(min.multiply(price).multiply(BigDecimal.valueOf(multiple)));
             if (holdingCodes.containsKey(internalCode)) {
                 min = min.subtract(BigDecimal.valueOf(holdingCodes.get(internalCode).getSecurityShare()).divide(BigDecimal.valueOf(multiple), RoundingMode.HALF_EVEN));
                 if (min.compareTo(BigDecimal.ZERO) < 0) {
@@ -70,8 +70,16 @@ public class OrderServiceImpl implements OrderService {
                 orders.add(order);
             }
         });
-        log.info("Max total: {}, min total: {}", maxTotal.stream().mapToDouble(BigDecimal::doubleValue).sum(), minTotal.stream().mapToDouble(BigDecimal::doubleValue).sum());
+//        log.info("Max total: {}, min total: {}", maxTotal.stream().mapToDouble(BigDecimal::doubleValue).sum(), minTotal.stream().mapToDouble(BigDecimal::doubleValue).sum());
         return orders.stream().filter(order -> order.share() > 0).toList();
+    }
+
+    @Override
+    public List<OrderDTO> buySplitEvenV2(Set<String> securityCodes, double cash, List<Position> holdings) {
+        double holdingsValue = holdings.stream().mapToDouble(holding ->
+                BigDecimal.valueOf(priceService.getLatestPrice(holding.getSecurityCode())).multiply(BigDecimal.valueOf(holding.getSecurityShare())).doubleValue()
+        ).sum();
+        return null;
     }
 
     @Override
@@ -120,6 +128,23 @@ public class OrderServiceImpl implements OrderService {
             order.setRemainingShare(sum);
         });
         orderRepo.saveAll(ordersToUpdate);
+    }
+
+    @Override
+    public List<OrderDTO> generateOrder(Map<String, Integer> securityToWeight, BigDecimal cash) {
+        final int totalWeight = securityToWeight.values().stream().mapToInt(weight -> weight).sum();
+        final BigDecimal unitCash = cash.divide(BigDecimal.valueOf(totalWeight), RoundingMode.HALF_DOWN).setScale(2, RoundingMode.HALF_DOWN);
+        List<OrderDTO> orders = new ArrayList<>();
+        securityToWeight.forEach((securityCode, weight)->{
+            BigDecimal perCash = unitCash.multiply(BigDecimal.valueOf(weight)).setScale(2, RoundingMode.HALF_DOWN);
+            long multiple = securityCode.startsWith("11") || securityCode.startsWith("12") ? Constant.CONVERTIBLE_BOND_MULTIPLE : Constant.STOCK_MULTIPLE;
+            String internalCode = securityCode.split("\\.")[0];
+            BigDecimal price = BigDecimal.valueOf(priceService.getLatestPrice(internalCode));
+            BigDecimal volWithoutMultiple = perCash.divide(price.multiply(BigDecimal.valueOf(multiple)), RoundingMode.HALF_EVEN).setScale(0, RoundingMode.DOWN);
+            OrderDTO order = new OrderDTO(Direction.买入, volWithoutMultiple.multiply(BigDecimal.valueOf(multiple)).longValue(), securityService.getSecurityName(securityCode.split("\\.")[0]), securityCode, volWithoutMultiple.multiply(price).multiply(BigDecimal.valueOf(multiple)).doubleValue());
+            orders.add(order);
+        } );
+        return orders;
     }
 
 }
