@@ -45,17 +45,13 @@ public class TradeTask {
     @Resource
     PositionBookForCrownRepo positionBookForCrownRepo;
 
-//    final BigDecimal takeProfit = new BigDecimal(Constant.CROWN_TAKE_PROFIT);
-//
-//    final BigDecimal stopLoss = new BigDecimal(Constant.CROWN_STOP_LOSS);
-
     @Scheduled(fixedDelay = 1000L)
     public void placeOrder() {
         LocalDate today = LocalDate.now();
         portfolioService.listPortfolioDTO().forEach(portfolioDTO -> {
             //Order execution
-            List<Order> orders = orderService.listOrders(portfolioDTO.name());
-//            List<Order> orders = orderService.listPendingOrders(portfolioDTO.name());
+//            List<Order> orders = orderService.listOrders(portfolioDTO.name());
+            List<Order> orders = orderService.listPendingOrders(portfolioDTO.name());
             Set<String> securityCodes = new HashSet<>();
 
             Set<String> securityCodesOfOrders = new HashSet<>();
@@ -105,9 +101,8 @@ public class TradeTask {
         double buyBackDiscount = 0.5d;
         portfolioService.listPortfolio().stream().filter(Portfolio::getTakeProfitStopLoss
         ).toList().forEach(portfolio -> {
-            List<PositionBookForCrown> positionBook = positionBookForCrownRepo.findByPortfolioName(portfolio.getName());
             Map<String, Position> position = portfolioService.listPosition(portfolio.getName()).stream().collect(Collectors.toMap(Position::getSecurityCode, Function.identity()));
-            positionBook.stream().parallel().forEach(positionBookForCrown -> {
+            positionBookForCrownRepo.findByPortfolioName(portfolio.getName()).stream().parallel().forEach(positionBookForCrown -> {
                 if (positionBookForCrown.getBuyBack()) {
                     if (position.get(positionBookForCrown.getSecurityCode()) == null) {
                         positionBookForCrown.setSecurityShare(Util.calVolume(positionBookForCrown.getSecurityShare(), buyBackDiscount, Constant.CONVERTIBLE_BOND_MULTIPLE));
@@ -140,19 +135,31 @@ public class TradeTask {
                         bidAskBrokerDTO -> {
                             if (BigDecimal.valueOf(bidAskBrokerDTO.bidPrice1()).divide(BigDecimal.valueOf(bidAskBrokerDTO.lastClose()), 4, RoundingMode.HALF_EVEN).compareTo(Constant.CROWN_TAKE_PROFIT) >= 0 ||
                                     BigDecimal.valueOf(bidAskBrokerDTO.askPrice1()).divide(BigDecimal.valueOf(bidAskBrokerDTO.lastClose()), 4, RoundingMode.HALF_EVEN).compareTo(Constant.CROWN_STOP_LOSS) <= 0) {
-                                Optional<PositionBookForCrown> book = positionBookForCrownRepo.findByPortfolioNameAndSecurityCode(portfolio.getName(), bidAskBrokerDTO.securityCode());
-                                if (book.isPresent() && !book.get().getSellLock()) {
-                                    List<OrderDTO> orders = orderService.sell(positions.stream().filter(position -> position.getSecurityCode().equals(bidAskBrokerDTO.securityCode())).toList());
-                                    if (!orders.isEmpty()) {
-                                        log.warn("BidAsk hit: {}", bidAskBrokerDTO);
-                                        orderService.addOrder(orders.get(0), portfolio.getName(), LocalDateTime.now(), LocalDateTime.now().plusMinutes(1L));
-                                        PositionBookForCrown positionBook = book.get();
-                                        positionBook.setSellLock(true);
-                                        positionBookForCrownRepo.save(positionBook);
-                                    }
-                                }
-                            }
+//                                Optional<PositionBookForCrown> book = positionBookForCrownRepo.findByPortfolioNameAndSecurityCode(portfolio.getName(), bidAskBrokerDTO.securityCode());
+//                                if (book.isPresent() && !book.get().getSellLock()) {
+//                                    List<OrderDTO> orders = orderService.sell(positions.stream().filter(position -> position.getSecurityCode().equals(bidAskBrokerDTO.securityCode())).toList());
+//                                    if (!orders.isEmpty()) {
+//                                        log.warn("BidAsk hit: {}", bidAskBrokerDTO);
+//                                        orderService.addOrder(orders.get(0), portfolio.getName(), LocalDateTime.now(), LocalDateTime.now().plusMinutes(1L));
+//                                        PositionBookForCrown positionBook = book.get();
+//                                        positionBook.setSellLock(true);
+//                                        positionBookForCrownRepo.save(positionBook);
+//                                    }
+//                                }
 
+                                positionBookForCrownRepo.findByPortfolioNameAndSecurityCode(portfolio.getName(), bidAskBrokerDTO.securityCode()).ifPresent(
+                                        book -> {
+                                            if (!book.getSellLock()) {
+                                                List<OrderDTO> orders = orderService.sell(positions.stream().filter(position -> position.getSecurityCode().equals(bidAskBrokerDTO.securityCode())).toList());
+                                                if (!orders.isEmpty()) {
+                                                    log.warn("BidAsk hit: {}", bidAskBrokerDTO);
+                                                    orderService.addOrder(orders.get(0), portfolio.getName(), LocalDateTime.now(), LocalDateTime.now().plusMinutes(1L));
+                                                    book.setSellLock(true);
+                                                    positionBookForCrownRepo.save(book);
+                                                }
+                                            }
+                                        });
+                            }
                         }
                 );
             }
