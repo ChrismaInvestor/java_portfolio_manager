@@ -5,7 +5,7 @@ import com.portfolio.manager.domain.Direction;
 import com.portfolio.manager.domain.Order;
 import com.portfolio.manager.domain.SubOrder;
 import com.portfolio.manager.domain.Trade;
-import com.portfolio.manager.integration.OrderPlacementService;
+import com.portfolio.manager.integration.OrderPlacementClient;
 import com.portfolio.manager.repository.SubOrderRepo;
 import com.portfolio.manager.repository.TradeRepo;
 import jakarta.annotation.Resource;
@@ -29,7 +29,7 @@ public class AlgoServiceImpl implements AlgoService {
     TradeRepo tradeRepo;
 
     @Resource
-    OrderPlacementService orderPlacementService;
+    OrderPlacementClient orderPlacementClient;
 
     @Override
     public List<SubOrder> testSplitOrders(Order order, LocalDateTime startTime, LocalDateTime endTime) {
@@ -57,9 +57,9 @@ public class AlgoServiceImpl implements AlgoService {
         trade.setOrderId(orderId);
 //       执行下单开始
         if (order.getBuyOrSell().equals(Direction.买入)) {
-            orderPlacementService.buy(trade.getCode(), price, vol);
+            orderPlacementClient.buy(trade.getCode(), price, vol);
         } else if (order.getBuyOrSell().equals(Direction.卖出)) {
-            orderPlacementService.sell(trade.getCode(), price, vol);
+            orderPlacementClient.sell(trade.getCode(), price, vol);
         }
 
 //        执行下单结束

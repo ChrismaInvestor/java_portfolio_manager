@@ -5,7 +5,7 @@ import com.portfolio.manager.dto.TradeDTO;
 
 import java.util.List;
 
-public interface OrderPlacementService {
+public interface OrderPlacementClient {
 
     // 返回orderId
     String buy(String code, Double price, Integer vol);

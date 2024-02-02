@@ -15,7 +15,7 @@ import java.util.List;
 
 @Slf4j
 @Service
-public class OrderPlacementServiceImpl implements OrderPlacementService {
+public class OrderPlacementClientImpl implements OrderPlacementClient {
     @Resource
     RestTemplate restTemplate;
 

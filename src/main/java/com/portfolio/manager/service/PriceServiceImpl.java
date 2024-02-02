@@ -1,6 +1,6 @@
 package com.portfolio.manager.service;
 
-import com.portfolio.manager.integration.MarketDataService;
+import com.portfolio.manager.integration.MarketDataClient;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -12,11 +12,11 @@ import java.util.List;
 public class PriceServiceImpl implements PriceService {
 
     @Resource
-    MarketDataService marketDataService;
+    MarketDataClient marketDataClient;
 
     @Override
     public Double getLatestPrice(String code) {
-        return marketDataService.getBidAsk(List.of(code)).get(0).askPrice1();
+        return marketDataClient.getBidAsk(List.of(code)).get(0).askPrice1();
     }
 
 }

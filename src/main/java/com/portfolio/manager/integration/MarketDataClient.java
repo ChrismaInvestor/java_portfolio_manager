@@ -6,7 +6,7 @@ import com.portfolio.manager.dto.SecurityDTO;
 
 import java.util.List;
 
-public interface MarketDataService {
+public interface MarketDataClient {
     List<SecurityDTO> listAllStocksInfo();
 
     List<BidAskBrokerDTO> getBidAsk(List<String> securityCodes);

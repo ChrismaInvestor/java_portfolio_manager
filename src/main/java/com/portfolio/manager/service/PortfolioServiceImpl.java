@@ -6,7 +6,7 @@ import com.portfolio.manager.domain.Position;
 import com.portfolio.manager.domain.strategy_specific.PositionBookForCrown;
 import com.portfolio.manager.dto.PortfolioDTO;
 import com.portfolio.manager.dto.TradeDTO;
-import com.portfolio.manager.integration.OrderPlacementService;
+import com.portfolio.manager.integration.OrderPlacementClient;
 import com.portfolio.manager.repository.DynamicsRepo;
 import com.portfolio.manager.repository.PortfolioRepo;
 import com.portfolio.manager.repository.PositionBookForCrownRepo;
@@ -38,7 +38,7 @@ public class PortfolioServiceImpl implements PortfolioService {
     PositionBookForCrownRepo positionBookForCrownRepo;
 
     @Resource
-    OrderPlacementService orderPlacemenIntegration;
+    OrderPlacementClient orderPlacemenIntegration;
 
     @Override
     public List<Position> listPosition(String portfolioName) {

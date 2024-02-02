@@ -16,7 +16,7 @@ import java.util.*;
 
 @Slf4j
 @Service
-public class MarketDataServiceImpl implements MarketDataService {
+public class MarketDataClientImpl implements MarketDataClient {
     @Resource
     RestTemplate restTemplate;
 
