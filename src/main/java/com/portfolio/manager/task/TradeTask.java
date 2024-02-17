@@ -50,18 +50,13 @@ public class TradeTask {
         LocalDate today = LocalDate.now();
         portfolioService.listPortfolioDTO().forEach(portfolioDTO -> {
             //Order execution
-//            List<Order> orders = orderService.listOrders(portfolioDTO.name());
             List<Order> orders = orderService.listPendingOrders(portfolioDTO.name());
             Set<String> securityCodes = new HashSet<>();
 
-            Set<String> securityCodesOfOrders = new HashSet<>();
             orders.forEach(order -> {
                 List<SubOrder> subOrders = order.getSubOrders().stream().filter(subOrder -> this.isBetween(subOrder.getStartTime(), subOrder.getEndTime()) && subOrder.getRemainingShare() > 0).toList();
                 if (!subOrders.isEmpty()) {
                     securityCodes.addAll(subOrders.stream().map(SubOrder::getSecurityCode).collect(Collectors.toSet()));
-                }
-                if (order.getUpdateTime().toLocalDate().isEqual(today)) {
-                    securityCodesOfOrders.add(order.getSecurityCode());
                 }
             });
 
@@ -90,7 +85,7 @@ public class TradeTask {
             }
             Portfolio portfolio = portfolioService.getPortfolio(portfolioDTO.name());
             // Update position
-            portfolioService.syncUpPositions(portfolio, securityCodesOfOrders);
+            portfolioService.syncUpPositionsAndDynamics(portfolio, orderService.listOrders(portfolioDTO.name()).stream().parallel().filter(order -> order.getUpdateTime().toLocalDate().isEqual(today)).map(Order::getSecurityCode).collect(Collectors.toSet()));
             // Update order
             orderService.updateOrders(portfolio);
         });
@@ -133,18 +128,6 @@ public class TradeTask {
                         bidAskBrokerDTO -> {
                             if (BigDecimal.valueOf(bidAskBrokerDTO.bidPrice1()).divide(BigDecimal.valueOf(bidAskBrokerDTO.lastClose()), 4, RoundingMode.HALF_EVEN).compareTo(Constant.CROWN_TAKE_PROFIT) >= 0 ||
                                     BigDecimal.valueOf(bidAskBrokerDTO.askPrice1()).divide(BigDecimal.valueOf(bidAskBrokerDTO.lastClose()), 4, RoundingMode.HALF_EVEN).compareTo(Constant.CROWN_STOP_LOSS) <= 0) {
-//                                Optional<PositionBookForCrown> book = positionBookForCrownRepo.findByPortfolioNameAndSecurityCode(portfolio.getName(), bidAskBrokerDTO.securityCode());
-//                                if (book.isPresent() && !book.get().getSellLock()) {
-//                                    List<OrderDTO> orders = orderService.sell(positions.stream().filter(position -> position.getSecurityCode().equals(bidAskBrokerDTO.securityCode())).toList());
-//                                    if (!orders.isEmpty()) {
-//                                        log.warn("BidAsk hit: {}", bidAskBrokerDTO);
-//                                        orderService.addOrder(orders.get(0), portfolio.getName(), LocalDateTime.now(), LocalDateTime.now().plusMinutes(1L));
-//                                        PositionBookForCrown positionBook = book.get();
-//                                        positionBook.setSellLock(true);
-//                                        positionBookForCrownRepo.save(positionBook);
-//                                    }
-//                                }
-
                                 positionBookForCrownRepo.findByPortfolioNameAndSecurityCode(portfolio.getName(), bidAskBrokerDTO.securityCode()).ifPresent(
                                         book -> {
                                             if (!book.getSellLock()) {

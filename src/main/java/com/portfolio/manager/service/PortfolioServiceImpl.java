@@ -12,6 +12,7 @@ import com.portfolio.manager.repository.PortfolioRepo;
 import com.portfolio.manager.repository.PositionBookForCrownRepo;
 import com.portfolio.manager.repository.PositionRepo;
 import com.portfolio.manager.task.TradeTask;
+import com.portfolio.manager.util.Util;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -38,7 +39,7 @@ public class PortfolioServiceImpl implements PortfolioService {
     PositionBookForCrownRepo positionBookForCrownRepo;
 
     @Resource
-    OrderPlacementClient orderPlacemenIntegration;
+    OrderPlacementClient orderPlacemenClient;
 
     @Override
     public List<Position> listPosition(String portfolioName) {
@@ -104,7 +105,7 @@ public class PortfolioServiceImpl implements PortfolioService {
     }
 
     @Override
-    public void syncUpPositions(Portfolio portfolio, Set<String> securityCodesOfOrders) {
+    public void syncUpPositionsAndDynamics(Portfolio portfolio, Set<String> securityCodesOfOrders) {
         // 获取当前持仓的股票代码
         Set<String> codes = this.listPosition(portfolio.getName()).stream().map(Position::getSecurityCode).collect(Collectors.toSet());
         // 增加PositionBook的股票代码
@@ -113,7 +114,7 @@ public class PortfolioServiceImpl implements PortfolioService {
         codes.addAll(securityCodesOfOrders);
 
         codes.forEach(code -> {
-            var positionOnBroker = orderPlacemenIntegration.checkPosition(code);
+            var positionOnBroker = orderPlacemenClient.checkPosition(code);
             if (positionOnBroker != null && TradeTask.isOrderTime()) {
                 if (positionOnBroker.vol() != null) {
                     Optional<Position> existingPosition = portfolio.getPositions().stream().filter(p -> p.getSecurityCode().equals(code)).findFirst();
@@ -152,10 +153,10 @@ public class PortfolioServiceImpl implements PortfolioService {
             }
         });
 
-        //Update dynamics
-        double todayTradeTotal = orderPlacemenIntegration.listTodayTrades().stream().filter(trade ->
+//        miniQMT could response with wrong data if it is not trading day, so keep it 0 on non-trading days.
+        double todayTradeTotal = Util.isTradingDay() ? orderPlacemenClient.listTodayTrades().stream().filter(trade ->
                 codes.contains(trade.securityCode())
-        ).mapToDouble(TradeDTO::amount).sum();
+        ).mapToDouble(TradeDTO::amount).sum() : 0.0d;
         this.updateDynamics(todayTradeTotal, portfolio);
         this.updatePortfolio(portfolio);
     }

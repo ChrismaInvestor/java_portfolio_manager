@@ -9,6 +9,7 @@ import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
@@ -39,7 +40,13 @@ public class OrderServiceImpl implements OrderService {
     public List<OrderDTO> buySplitEven(Set<String> securityCodes, double toSellMarketValue, double cash, List<Position> holdings) {
         log.info("new codes: {}, holding codes: {}", securityCodes, holdings);
         double holdingsValue = holdings.stream().mapToDouble(holding ->
-                BigDecimal.valueOf(priceService.getLatestPrice(holding.getSecurityCode())).multiply(BigDecimal.valueOf(holding.getSecurityShare())).doubleValue()
+                {
+                    try {
+                        return BigDecimal.valueOf(priceService.getLatestPrice(holding.getSecurityCode())).multiply(BigDecimal.valueOf(holding.getSecurityShare())).doubleValue();
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
         ).sum();
         BigDecimal totalValue = BigDecimal.valueOf(toSellMarketValue).add(BigDecimal.valueOf(cash)).add(BigDecimal.valueOf(holdingsValue));
         final BigDecimal average = totalValue.divide(BigDecimal.valueOf(securityCodes.size()), RoundingMode.HALF_DOWN).setScale(2, RoundingMode.HALF_DOWN);
@@ -50,7 +57,12 @@ public class OrderServiceImpl implements OrderService {
         securityCodes.forEach(code -> {
             long multiple = code.startsWith("11") || code.startsWith("12") ? Constant.CONVERTIBLE_BOND_MULTIPLE : Constant.STOCK_MULTIPLE;
             String internalCode = code.split("\\.")[0];
-            BigDecimal price = BigDecimal.valueOf(priceService.getLatestPrice(internalCode));
+            BigDecimal price = null;
+            try {
+                price = BigDecimal.valueOf(priceService.getLatestPrice(internalCode));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
             BigDecimal divide = average.divide(price.multiply(BigDecimal.valueOf(multiple)), RoundingMode.HALF_EVEN);
             BigDecimal min = divide.setScale(0, RoundingMode.DOWN);
 //            BigDecimal max = divide.setScale(0, RoundingMode.UP);
@@ -77,14 +89,26 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public List<OrderDTO> buySplitEvenV2(Set<String> securityCodes, double cash, List<Position> holdings) {
         double holdingsValue = holdings.stream().mapToDouble(holding ->
-                BigDecimal.valueOf(priceService.getLatestPrice(holding.getSecurityCode())).multiply(BigDecimal.valueOf(holding.getSecurityShare())).doubleValue()
+                {
+                    try {
+                        return BigDecimal.valueOf(priceService.getLatestPrice(holding.getSecurityCode())).multiply(BigDecimal.valueOf(holding.getSecurityShare())).doubleValue();
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
         ).sum();
         return null;
     }
 
     @Override
     public List<OrderDTO> sell(List<Position> toSell) {
-        return toSell.stream().map(position -> new OrderDTO(Direction.卖出, position.getSecurityShare(), securityService.getSecurityName(position.getSecurityCode()), position.getSecurityCode(), BigDecimal.valueOf(priceService.getLatestPrice(position.getSecurityCode())).multiply(BigDecimal.valueOf(position.getSecurityShare())).doubleValue())).toList();
+        return toSell.stream().map(position -> {
+            try {
+                return new OrderDTO(Direction.卖出, position.getSecurityShare(), securityService.getSecurityName(position.getSecurityCode()), position.getSecurityCode(), BigDecimal.valueOf(priceService.getLatestPrice(position.getSecurityCode())).multiply(BigDecimal.valueOf(position.getSecurityShare())).doubleValue());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }).toList();
     }
 
     @Override
@@ -139,7 +163,12 @@ public class OrderServiceImpl implements OrderService {
             BigDecimal perCash = unitCash.multiply(BigDecimal.valueOf(weight)).setScale(2, RoundingMode.HALF_DOWN);
             long multiple = securityCode.startsWith("11") || securityCode.startsWith("12") ? Constant.CONVERTIBLE_BOND_MULTIPLE : Constant.STOCK_MULTIPLE;
             String internalCode = securityCode.split("\\.")[0];
-            BigDecimal price = BigDecimal.valueOf(priceService.getLatestPrice(internalCode));
+            BigDecimal price = null;
+            try {
+                price = BigDecimal.valueOf(priceService.getLatestPrice(internalCode));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
             BigDecimal volWithoutMultiple = perCash.divide(price.multiply(BigDecimal.valueOf(multiple)), RoundingMode.HALF_EVEN).setScale(0, RoundingMode.DOWN);
             OrderDTO order = new OrderDTO(Direction.买入, volWithoutMultiple.multiply(BigDecimal.valueOf(multiple)).longValue(), securityService.getSecurityName(securityCode.split("\\.")[0]), securityCode, volWithoutMultiple.multiply(price).multiply(BigDecimal.valueOf(multiple)).doubleValue());
             orders.add(order);

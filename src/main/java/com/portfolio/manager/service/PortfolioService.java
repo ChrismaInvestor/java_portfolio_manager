@@ -30,7 +30,7 @@ public interface PortfolioService {
 
     void updatePosition(Position position);
 
-    void syncUpPositions(Portfolio portfolio, Set<String> codesOfOrders);
+    void syncUpPositionsAndDynamics(Portfolio portfolio, Set<String> codesOfOrders);
 
     void deletePosition(Position position);
 }
