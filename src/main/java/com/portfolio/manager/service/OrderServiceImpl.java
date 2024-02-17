@@ -57,7 +57,7 @@ public class OrderServiceImpl implements OrderService {
         securityCodes.forEach(code -> {
             long multiple = code.startsWith("11") || code.startsWith("12") ? Constant.CONVERTIBLE_BOND_MULTIPLE : Constant.STOCK_MULTIPLE;
             String internalCode = code.split("\\.")[0];
-            BigDecimal price = null;
+            BigDecimal price;
             try {
                 price = BigDecimal.valueOf(priceService.getLatestPrice(internalCode));
             } catch (IOException e) {
