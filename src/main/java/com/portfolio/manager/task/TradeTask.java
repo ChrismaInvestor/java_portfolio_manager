@@ -93,17 +93,23 @@ public class TradeTask {
 
     @Scheduled(cron = "0 50 14 ? * MON-FRI")
     public void buyBackForCrown() {
-        double buyBackDiscount = 0.5d;
+        final double buyBackDiscount = 0.5d;
+        final double buyBackHalfBar = 0.2d;
         portfolioService.listPortfolio().stream().filter(Portfolio::getTakeProfitStopLoss
         ).toList().forEach(portfolio -> {
             Map<String, Position> position = portfolioService.listPosition(portfolio.getName()).stream().collect(Collectors.toMap(Position::getSecurityCode, Function.identity()));
             positionBookForCrownRepo.findByPortfolioName(portfolio.getName()).stream().filter(PositionBookForCrown::getBuyBack).parallel().forEach(positionBookForCrown -> {
-                if (position.get(positionBookForCrown.getSecurityCode()) == null) {
+                var currentPosition = position.get(positionBookForCrown.getSecurityCode());
+                if (currentPosition == null ||
+                        BigDecimal.valueOf(currentPosition.getSecurityShare()).divide(BigDecimal.valueOf(positionBookForCrown.getSecurityShare()), 2, RoundingMode.HALF_UP).compareTo(BigDecimal.valueOf(buyBackHalfBar)) < 0) {
                     positionBookForCrown.setSecurityShare(Util.calVolume(positionBookForCrown.getSecurityShare(), buyBackDiscount, Constant.CONVERTIBLE_BOND_MULTIPLE));
                     log.warn("Buy back hit: {}", positionBookForCrown);
+                    if (currentPosition != null) {
+                        positionBookForCrown.setSecurityShare(positionBookForCrown.getSecurityShare() - currentPosition.getSecurityShare());
+                    }
                     OrderDTO orderDTO = new OrderDTO(Direction.买入, positionBookForCrown.getSecurityShare(), positionBookForCrown.getSecurityName(), positionBookForCrown.getSecurityCode(), 0.0d);
                     orderService.addOrder(orderDTO, portfolio.getName(), LocalDateTime.now(), LocalDateTime.now().plusMinutes(5L));
-                } else if (position.get(positionBookForCrown.getSecurityCode()).getSecurityShare().compareTo(positionBookForCrown.getSecurityShare()) < 0) {
+                } else if (currentPosition.getSecurityShare().compareTo(positionBookForCrown.getSecurityShare()) < 0) {
                     log.warn("Buy back hit: {}, difference: {}", positionBookForCrown, positionBookForCrown.getSecurityShare() - position.get(positionBookForCrown.getSecurityCode()).getSecurityShare());
                     OrderDTO orderDTO = new OrderDTO(Direction.买入, positionBookForCrown.getSecurityShare() - position.get(positionBookForCrown.getSecurityCode()).getSecurityShare(), positionBookForCrown.getSecurityName(), positionBookForCrown.getSecurityCode(), 0.0d);
                     orderService.addOrder(orderDTO, portfolio.getName(), LocalDateTime.now(), LocalDateTime.now().plusMinutes(5L));
