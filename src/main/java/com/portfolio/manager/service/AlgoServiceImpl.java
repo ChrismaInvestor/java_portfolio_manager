@@ -55,11 +55,14 @@ public class AlgoServiceImpl implements AlgoService {
         trade.setCode(order.getSecurityCode());
         trade.setDirection(order.getBuyOrSell());
         trade.setOrderId(orderId);
+        trade.setSubOrderId(order.getId());
 //       执行下单开始
         if (order.getBuyOrSell().equals(Direction.买入)) {
-            orderPlacementClient.buy(trade.getCode(), price, vol);
+            String clientOrderId = orderPlacementClient.buy(trade.getCode(), price, vol);
+            trade.setClientOrderId(Long.parseLong(clientOrderId));
         } else if (order.getBuyOrSell().equals(Direction.卖出)) {
-            orderPlacementClient.sell(trade.getCode(), price, vol);
+            String clientOrderId = orderPlacementClient.sell(trade.getCode(), price, vol);
+            trade.setClientOrderId(Long.parseLong(clientOrderId));
         }
 
 //        执行下单结束

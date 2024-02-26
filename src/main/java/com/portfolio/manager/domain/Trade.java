@@ -27,6 +27,11 @@ public class Trade {
 
     private Long orderId;
 
+//    Added on 2024-02-26
+    private Long subOrderId;
+
+    private Long clientOrderId;
+
     @NotNull
     @Pattern(regexp = "[0-9]{6}")
     @Column(length = 6)
