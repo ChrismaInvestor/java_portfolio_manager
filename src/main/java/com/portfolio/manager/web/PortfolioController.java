@@ -3,7 +3,6 @@ package com.portfolio.manager.web;
 import com.portfolio.manager.domain.Dynamics;
 import com.portfolio.manager.domain.Investor;
 import com.portfolio.manager.domain.Portfolio;
-import com.portfolio.manager.domain.Position;
 import com.portfolio.manager.dto.InvestorPLDTO;
 import com.portfolio.manager.dto.PortfolioDTO;
 import com.portfolio.manager.repository.DynamicsRepo;
@@ -19,8 +18,6 @@ import java.math.RoundingMode;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
