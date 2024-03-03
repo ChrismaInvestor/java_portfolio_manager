@@ -65,9 +65,6 @@ public class OrderServiceImpl implements OrderService {
             }
             BigDecimal divide = average.divide(price.multiply(BigDecimal.valueOf(multiple)), RoundingMode.HALF_EVEN);
             BigDecimal min = divide.setScale(0, RoundingMode.DOWN);
-//            BigDecimal max = divide.setScale(0, RoundingMode.UP);
-//            maxTotal.add(max.multiply(price).multiply(BigDecimal.valueOf(multiple)));
-//            minTotal.add(min.multiply(price).multiply(BigDecimal.valueOf(multiple)));
             if (holdingCodes.containsKey(internalCode)) {
                 min = min.subtract(BigDecimal.valueOf(holdingCodes.get(internalCode).getSecurityShare()).divide(BigDecimal.valueOf(multiple), RoundingMode.HALF_EVEN));
                 if (min.compareTo(BigDecimal.ZERO) < 0) {
@@ -82,7 +79,6 @@ public class OrderServiceImpl implements OrderService {
                 orders.add(order);
             }
         });
-//        log.info("Max total: {}, min total: {}", maxTotal.stream().mapToDouble(BigDecimal::doubleValue).sum(), minTotal.stream().mapToDouble(BigDecimal::doubleValue).sum());
         return orders.stream().filter(order -> order.share() > 0).toList();
     }
 
@@ -119,7 +115,7 @@ public class OrderServiceImpl implements OrderService {
         order.setSecurityCode(orderDTO.securityCode().split("\\.")[0]);
         order.setPortfolioName(portfolio);
         order.setBuyOrSell(orderDTO.buyOrSell());
-        order.setSubOrders(algoService.testSplitOrders(order, startTime, endTime));
+        order.setSubOrders(algoService.splitOrders(order, startTime, endTime));
         orderRepo.save(order);
     }
 
@@ -155,15 +151,15 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public List<OrderDTO> generateOrder(Map<String, Integer> securityToWeight, BigDecimal cash) {
-        final int totalWeight = securityToWeight.values().stream().mapToInt(weight -> weight).sum();
-        final BigDecimal unitCash = cash.divide(BigDecimal.valueOf(totalWeight), RoundingMode.HALF_DOWN).setScale(2, RoundingMode.HALF_DOWN);
+    public List<OrderDTO> generateOrder(Map<String, BigDecimal> securityToWeight, BigDecimal cash) {
+        final BigDecimal totalWeight = securityToWeight.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
+        final BigDecimal unitCash = cash.divide(totalWeight, RoundingMode.HALF_DOWN).setScale(2, RoundingMode.HALF_DOWN);
         List<OrderDTO> orders = new ArrayList<>();
         securityToWeight.forEach((securityCode, weight)->{
-            BigDecimal perCash = unitCash.multiply(BigDecimal.valueOf(weight)).setScale(2, RoundingMode.HALF_DOWN);
+            BigDecimal perCash = unitCash.multiply(weight).setScale(2, RoundingMode.HALF_DOWN);
             long multiple = securityCode.startsWith("11") || securityCode.startsWith("12") ? Constant.CONVERTIBLE_BOND_MULTIPLE : Constant.STOCK_MULTIPLE;
             String internalCode = securityCode.split("\\.")[0];
-            BigDecimal price = null;
+            BigDecimal price;
             try {
                 price = BigDecimal.valueOf(priceService.getLatestPrice(internalCode));
             } catch (IOException e) {

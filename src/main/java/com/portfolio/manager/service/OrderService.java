@@ -31,6 +31,6 @@ public interface OrderService {
 
     void updateOrders(Portfolio portfolio);
 
-    List<OrderDTO> generateOrder(Map<String, Integer> securityToWeight, BigDecimal cash);
+    List<OrderDTO> generateOrder(Map<String, BigDecimal> securityToWeight, BigDecimal cash);
 
 }

@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public interface AlgoService {
-    List<SubOrder> testSplitOrders(Order order, LocalDateTime startTime, LocalDateTime endTime);
+    List<SubOrder> splitOrders(Order order, LocalDateTime startTime, LocalDateTime endTime);
 
     void execute(SubOrder order, Long orderId, Double price, Integer vol);
 }
