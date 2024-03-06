@@ -82,6 +82,7 @@ public class PositionController {
                         positionBookForCrown.setSellLock(false);
                         positionBookForCrownRepo.save(positionBookForCrown);
                     }));
+            // Remove cases like stop loss securities while not present in the next orders
             Set<String> codesOfOrders = orderPlacement.orders().stream().map(OrderDTO::securityCode).collect(Collectors.toSet());
             positionBookForCrownRepo.findByPortfolioName(orderPlacement.portfolio()).forEach(p->{
                 if (!codesOfOrders.contains(p.getSecurityCode())){

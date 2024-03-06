@@ -9,6 +9,7 @@ import com.portfolio.manager.repository.DynamicsRepo;
 import com.portfolio.manager.repository.InvestorRepo;
 import com.portfolio.manager.repository.PortfolioRepo;
 import com.portfolio.manager.service.PortfolioService;
+import com.portfolio.manager.util.Util;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -54,17 +55,8 @@ public class PortfolioController {
     @GetMapping("investorBook")
     public List<InvestorPLDTO> listInvestorBook() {
         List<Investor> investors = investorRepo.findAll();
-        Map<String, BigDecimal> portfolioSharesMap = new HashMap<>();
-
-       investors.forEach(investor -> {
-           if (portfolioSharesMap.containsKey(investor.getPortfolioName())){
-                var newResult = portfolioSharesMap.get(investor.getPortfolioName()).add(investor.getShareAmount());
-                portfolioSharesMap.put(investor.getPortfolioName(), newResult);
-           }else{
-               portfolioSharesMap.put(investor.getPortfolioName(), investor.getShareAmount());
-           }
-       });
-        return investorRepo.findAll().stream().map(investor -> {
+        Map<String, BigDecimal> portfolioSharesMap = Util.getPortfolioSharesMap(investors);
+        return investors.stream().map(investor -> {
             Dynamics dynamics = dynamicsRepo.findByPortfolioName(investor.getPortfolioName());
             BigDecimal nav = BigDecimal.valueOf(dynamics.getTotalMarketValue()).divide(portfolioSharesMap.get(investor.getPortfolioName()),6, RoundingMode.DOWN);
             return new InvestorPLDTO(investor.getName(), investor.getShareAmount().toString(), nav.toString(), investor.getPortfolioName());

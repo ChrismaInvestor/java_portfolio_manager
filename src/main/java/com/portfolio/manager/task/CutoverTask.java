@@ -1,16 +1,25 @@
 package com.portfolio.manager.task;
 
 import com.portfolio.manager.domain.Dynamics;
+import com.portfolio.manager.domain.Investor;
+import com.portfolio.manager.domain.Nav;
 import com.portfolio.manager.domain.Portfolio;
 import com.portfolio.manager.domain.strategy_specific.PositionBookForCrown;
+import com.portfolio.manager.repository.InvestorRepo;
+import com.portfolio.manager.repository.NavRepo;
 import com.portfolio.manager.repository.PositionBookForCrownRepo;
 import com.portfolio.manager.service.PortfolioService;
+import com.portfolio.manager.util.Util;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Component
 @Slf4j
@@ -20,6 +29,12 @@ public class CutoverTask {
 
     @Resource
     PositionBookForCrownRepo positionBookForCrownRepo;
+
+    @Resource
+    InvestorRepo investorRepo;
+
+    @Resource
+    NavRepo navRepo;
 
     @Scheduled(cron = "0 59 23 ? * MON-FRI")
     public void cashRefresh() {
@@ -32,6 +47,15 @@ public class CutoverTask {
             List<PositionBookForCrown> positionBookForCrownList = positionBookForCrownRepo.findByPortfolioName(portfolio.getName());
             positionBookForCrownList.forEach(positionBookForCrown -> positionBookForCrown.setSellLock(false));
             positionBookForCrownRepo.saveAll(positionBookForCrownList);
+
+            List<Investor> investors = investorRepo.findAll();
+            Map<String, BigDecimal> portfolioSharesMap = Util.getPortfolioSharesMap(investors);
+            investors.stream().map(Investor::getPortfolioName).collect(Collectors.toSet()).forEach(portfolioName -> {
+                Nav nav = new Nav();
+                nav.setPortfolioName(portfolioName);
+                nav.setNav(BigDecimal.valueOf(dynamics.getTotalMarketValue()).divide(portfolioSharesMap.get(portfolioName), 6, RoundingMode.DOWN));
+                navRepo.save(nav);
+            });
         });
     }
 }
