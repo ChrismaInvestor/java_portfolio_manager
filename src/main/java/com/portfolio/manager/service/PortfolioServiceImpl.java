@@ -43,7 +43,7 @@ public class PortfolioServiceImpl implements PortfolioService {
 
     @Override
     public List<Position> listPosition(String portfolioName) {
-        return portfolioRepo.findByName(portfolioName).getPositions();
+        return this.getPortfolio(portfolioName).getPositions();
     }
 
     @Override

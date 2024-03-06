@@ -56,33 +56,36 @@ public class PositionController {
         orderPlacement.orders().stream().parallel().forEach(orderDTO -> orderService.addOrder(orderDTO, orderPlacement.portfolio(), orderPlacement.startTime().plusHours(8L), orderPlacement.endTime().plusHours(8L)));
         //For crown strategy only
         if (portfolioService.getPortfolio(orderPlacement.portfolio()).getTakeProfitStopLoss()) {
-            Set<String> codes = positionBookForCrownRepo.findByPortfolioName(orderPlacement.portfolio()).stream().map(PositionBookForCrown::getSecurityCode).collect(Collectors.toSet());
-            orderPlacement.orders().forEach(order -> {
-                if (!codes.contains(order.securityCode())) {
-                    PositionBookForCrown positionBookForCrown = new PositionBookForCrown();
-                    positionBookForCrown.setPortfolioName(orderPlacement.portfolio());
-                    positionBookForCrown.setSecurityCode(order.securityCode());
-                    positionBookForCrown.setSecurityShare(order.share());
-                    positionBookForCrown.setSecurityName(order.securityName());
-                    positionBookForCrown.setSellLock(false);
-//                    positionBookForCrown.setBuyBack(false);
-                    positionBookForCrownRepo.save(positionBookForCrown);
-                } else {
-                    Optional<PositionBookForCrown> position = positionBookForCrownRepo.findByPortfolioNameAndSecurityCode(orderPlacement.portfolio(), order.securityCode());
-                    if (position.isPresent()) {
-                        PositionBookForCrown p = position.get();
+            orderPlacement.orders().forEach(order -> positionBookForCrownRepo.findByPortfolioNameAndSecurityCode(orderPlacement.portfolio(), order.securityCode()).ifPresentOrElse(
+                    p -> {
+                        Optional<Position> currentPosition = portfolioService.listPosition(orderPlacement.portfolio()).stream().filter(currentP -> currentP.getSecurityCode().equals(order.securityCode())).findFirst();
                         if (order.buyOrSell().equals(Direction.买入)) {
-                            p.setSecurityShare(p.getSecurityShare() + order.share());
+                            currentPosition.ifPresentOrElse(currentP -> p.setSecurityShare(currentP.getSecurityShare() + order.share()),()-> p.setSecurityShare(order.share()));
                             positionBookForCrownRepo.save(p);
                         } else if (order.buyOrSell().equals(Direction.卖出)) {
-                            p.setSecurityShare(p.getSecurityShare() - order.share());
-                            if (p.getSecurityShare().compareTo(0L) <= 0) {
-                                positionBookForCrownRepo.delete(p);
-                            } else {
-                                positionBookForCrownRepo.save(p);
-                            }
+                            currentPosition.ifPresent(currentP -> {
+                                p.setSecurityShare(currentP.getSecurityShare() - order.share());
+                                if (p.getSecurityShare().compareTo(0L) <= 0) {
+                                    positionBookForCrownRepo.delete(p);
+                                } else {
+                                    positionBookForCrownRepo.save(p);
+                                }
+                            });
                         }
                     }
+                    , () -> {
+                        PositionBookForCrown positionBookForCrown = new PositionBookForCrown();
+                        positionBookForCrown.setPortfolioName(orderPlacement.portfolio());
+                        positionBookForCrown.setSecurityCode(order.securityCode());
+                        positionBookForCrown.setSecurityShare(order.share());
+                        positionBookForCrown.setSecurityName(order.securityName());
+                        positionBookForCrown.setSellLock(false);
+                        positionBookForCrownRepo.save(positionBookForCrown);
+                    }));
+            Set<String> codesOfOrders = orderPlacement.orders().stream().map(OrderDTO::securityCode).collect(Collectors.toSet());
+            positionBookForCrownRepo.findByPortfolioName(orderPlacement.portfolio()).forEach(p->{
+                if (!codesOfOrders.contains(p.getSecurityCode())){
+                    positionBookForCrownRepo.delete(p);
                 }
             });
         }
