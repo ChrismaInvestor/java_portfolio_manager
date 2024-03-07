@@ -50,12 +50,10 @@ public class CutoverTask {
 
             List<Investor> investors = investorRepo.findAll();
             Map<String, BigDecimal> portfolioSharesMap = Util.getPortfolioSharesMap(investors);
-            investors.stream().map(Investor::getPortfolioName).collect(Collectors.toSet()).forEach(portfolioName -> {
-                Nav nav = new Nav();
-                nav.setPortfolioName(portfolioName);
-                nav.setNav(BigDecimal.valueOf(dynamics.getTotalMarketValue()).divide(portfolioSharesMap.get(portfolioName), 6, RoundingMode.DOWN));
-                navRepo.save(nav);
-            });
+            Nav nav = new Nav();
+            nav.setPortfolioName(portfolioDTO.name());
+            nav.setNav(BigDecimal.valueOf(dynamics.getTotalMarketValue()).divide(portfolioSharesMap.get(portfolioDTO.name()), 6, RoundingMode.DOWN));
+            navRepo.save(nav);
         });
     }
 }
