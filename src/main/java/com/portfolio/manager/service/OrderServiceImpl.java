@@ -50,8 +50,6 @@ public class OrderServiceImpl implements OrderService {
         ).sum();
         BigDecimal totalValue = BigDecimal.valueOf(toSellMarketValue).add(BigDecimal.valueOf(cash)).add(BigDecimal.valueOf(holdingsValue));
         final BigDecimal average = totalValue.divide(BigDecimal.valueOf(securityCodes.size()), RoundingMode.HALF_DOWN).setScale(2, RoundingMode.HALF_DOWN);
-        List<BigDecimal> maxTotal = new ArrayList<>();
-        List<BigDecimal> minTotal = new ArrayList<>();
         List<OrderDTO> orders = new ArrayList<>();
         Map<String, Position> holdingCodes = holdings.stream().collect(Collectors.toMap(Position::getSecurityCode, Function.identity()));
         securityCodes.forEach(code -> {

@@ -60,7 +60,7 @@ public class PositionController {
                     p -> {
                         Optional<Position> currentPosition = portfolioService.listPosition(orderPlacement.portfolio()).stream().filter(currentP -> currentP.getSecurityCode().equals(order.securityCode())).findFirst();
                         if (order.buyOrSell().equals(Direction.买入)) {
-                            currentPosition.ifPresentOrElse(currentP -> p.setSecurityShare(currentP.getSecurityShare() + order.share()),()-> p.setSecurityShare(order.share()));
+                            currentPosition.ifPresentOrElse(currentP -> p.setSecurityShare(currentP.getSecurityShare() + order.share()), () -> p.setSecurityShare(order.share()));
                             positionBookForCrownRepo.save(p);
                         } else if (order.buyOrSell().equals(Direction.卖出)) {
                             currentPosition.ifPresent(currentP -> {
@@ -82,13 +82,6 @@ public class PositionController {
                         positionBookForCrown.setSellLock(false);
                         positionBookForCrownRepo.save(positionBookForCrown);
                     }));
-            // Remove cases like stop loss securities while not present in the next orders
-            Set<String> codesOfOrders = orderPlacement.orders().stream().map(OrderDTO::securityCode).collect(Collectors.toSet());
-            positionBookForCrownRepo.findByPortfolioName(orderPlacement.portfolio()).forEach(p->{
-                if (!codesOfOrders.contains(p.getSecurityCode())){
-                    positionBookForCrownRepo.delete(p);
-                }
-            });
         }
 
     }
