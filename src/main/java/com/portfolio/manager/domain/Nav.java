@@ -16,7 +16,7 @@ import java.math.BigDecimal;
 @Entity(name = "nav")
 @ToString(callSuper = true)
 public class Nav extends BaseEntity {
-    @Column(scale = 6)
+    @Column(precision = 30, scale = 6)
     private BigDecimal nav;
     private String portfolioName;
 }
