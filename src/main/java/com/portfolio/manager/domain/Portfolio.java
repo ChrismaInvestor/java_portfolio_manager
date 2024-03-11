@@ -31,6 +31,8 @@ public class Portfolio extends BaseEntity {
 
     private Boolean takeProfitStopLoss;
 
+    private Boolean mock;
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

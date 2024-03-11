@@ -1,6 +1,7 @@
 package com.portfolio.manager.service;
 
 import com.portfolio.manager.domain.Dynamics;
+import com.portfolio.manager.domain.Order;
 import com.portfolio.manager.domain.Portfolio;
 import com.portfolio.manager.domain.Position;
 import com.portfolio.manager.domain.strategy_specific.PositionBookForCrown;
@@ -18,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -41,6 +43,9 @@ public class PortfolioServiceImpl implements PortfolioService {
     @Resource
     OrderPlacementClient orderPlacemenClient;
 
+    @Resource
+    OrderService orderService;
+
     @Override
     public List<Position> listPosition(String portfolioName) {
         return this.getPortfolio(portfolioName).getPositions();
@@ -62,7 +67,11 @@ public class PortfolioServiceImpl implements PortfolioService {
     }
 
     @Override
-    public void updateDynamics(Double todayTradeTotal, Portfolio portfolio) {
+    public void updateDynamics(Set<String> codes, Portfolio portfolio) {
+        //        miniQMT could response with wrong data if it is not trading day, so keep it 0 on non-trading days.
+        double todayTradeTotal = Util.isTradingDay() ? orderPlacemenClient.listTodayTrades().stream().filter(trade ->
+                codes.contains(trade.securityCode())
+        ).mapToDouble(TradeDTO::amount).sum() : 0.0d;
         Dynamics dynamics = this.getDynamics(portfolio);
         dynamics.setCash(BigDecimal.valueOf(dynamics.getLastDayCash()).subtract(BigDecimal.valueOf(todayTradeTotal)).doubleValue());
         dynamics.setSecurityMarketValue(portfolio.getPositions().stream().mapToDouble(Position::getMarketValue).sum());
@@ -100,64 +109,63 @@ public class PortfolioServiceImpl implements PortfolioService {
     }
 
     @Override
-    public void updatePosition(Position position) {
-        positionRepo.save(position);
-    }
+    public void syncUpPositionsAndDynamicsWithBroker(Portfolio portfolio) {
+        final LocalDate today = LocalDate.now();
 
-    @Override
-    public void syncUpPositionsAndDynamics(Portfolio portfolio, Set<String> securityCodesOfOrders) {
         // 获取当前持仓的股票代码
         Set<String> codes = this.listPosition(portfolio.getName()).stream().map(Position::getSecurityCode).collect(Collectors.toSet());
         // 增加PositionBook的股票代码
         codes.addAll(positionBookForCrownRepo.findByPortfolioName(portfolio.getName()).stream().map(PositionBookForCrown::getSecurityCode).collect(Collectors.toSet()));
         // 增加order中当日的股票代码
+        Set<String> securityCodesOfOrders = orderService.listOrders(portfolio.getName()).stream().parallel().filter(order -> order.getUpdateTime().toLocalDate().isEqual(today)).map(Order::getSecurityCode).collect(Collectors.toSet());
         codes.addAll(securityCodesOfOrders);
 
+//        Update position and position book
         codes.forEach(code -> {
             var positionOnBroker = orderPlacemenClient.checkPosition(code);
             if (positionOnBroker != null && TradeTask.isOrderTime()) {
                 if (positionOnBroker.vol() != null) {
                     Optional<Position> existingPosition = portfolio.getPositions().stream().filter(p -> p.getSecurityCode().equals(code)).findFirst();
-                    if (existingPosition.isEmpty()) {
-                        // Add position
+                    existingPosition.ifPresentOrElse(currentPosition -> {
+//                        Update existing position
+                        currentPosition.setSecurityShare(Long.valueOf(positionOnBroker.vol()));
+                        currentPosition.setCost(BigDecimal.valueOf(positionOnBroker.unitCost()).multiply(BigDecimal.valueOf(currentPosition.getSecurityShare())).doubleValue());
+                        currentPosition.setMarketValue(positionOnBroker.marketValue());
+                        positionRepo.save(currentPosition);
+                    }, () -> {
+//                        Add new position
                         Position currentPosition = new Position();
                         currentPosition.setSecurityCode(code);
                         currentPosition.setSecurityShare(Long.valueOf(positionOnBroker.vol()));
                         currentPosition.setCost(BigDecimal.valueOf(positionOnBroker.unitCost()).multiply(BigDecimal.valueOf(currentPosition.getSecurityShare())).doubleValue());
                         currentPosition.setMarketValue(positionOnBroker.marketValue());
-                        this.updatePosition(currentPosition);
+                        positionRepo.save(currentPosition);
                         portfolio.getPositions().add(currentPosition);
-                    } else {
-                        // Update position
-                        Position currentPosition = existingPosition.get();
-                        currentPosition.setSecurityShare(Long.valueOf(positionOnBroker.vol()));
-                        currentPosition.setCost(BigDecimal.valueOf(positionOnBroker.unitCost()).multiply(BigDecimal.valueOf(currentPosition.getSecurityShare())).doubleValue());
-                        currentPosition.setMarketValue(positionOnBroker.marketValue());
-                        this.updatePosition(currentPosition);
-                    }
+                    });
                 } else {
                     // Remove positions
                     Optional<Position> existingPosition = portfolio.getPositions().stream().filter(p -> p.getSecurityCode().equals(code)).findFirst();
-                    if (existingPosition.isPresent()) {
+                    existingPosition.ifPresent(position -> {
                         portfolio.setPositions(portfolio.getPositions().stream().filter(p -> !p.getSecurityCode().equals(code)).toList());
                         this.updatePortfolio(portfolio);
-                        this.deletePosition(existingPosition.get());
+                        this.deletePosition(position);
                         // Turn the auto mark to True if stop loss or take profit occurs
                         var positionInBook = positionBookForCrownRepo.findByPortfolioNameAndSecurityCode(portfolio.getName(), existingPosition.get().getSecurityCode());
                         positionInBook.ifPresent(positionBookForCrown -> {
                             positionBookForCrown.setSellLock(false);
                             positionBookForCrownRepo.save(positionBookForCrown);
                         });
-                    }
+                    });
                 }
             }
         });
 
 //        miniQMT could response with wrong data if it is not trading day, so keep it 0 on non-trading days.
-        double todayTradeTotal = Util.isTradingDay() ? orderPlacemenClient.listTodayTrades().stream().filter(trade ->
-                codes.contains(trade.securityCode())
-        ).mapToDouble(TradeDTO::amount).sum() : 0.0d;
-        this.updateDynamics(todayTradeTotal, portfolio);
+//        double todayTradeTotal = Util.isTradingDay() ? orderPlacemenClient.listTodayTrades().stream().filter(trade ->
+//                codes.contains(trade.securityCode())
+//        ).mapToDouble(TradeDTO::amount).sum() : 0.0d;
+//        this.updateDynamics(todayTradeTotal, portfolio);
+        this.updateDynamics(codes, portfolio);
         this.updatePortfolio(portfolio);
     }
 

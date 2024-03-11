@@ -17,8 +17,6 @@ public interface PortfolioService {
 
     void updateDynamics(Dynamics dynamics);
 
-    void updateDynamics(Double todayTradeTotal, Portfolio portfolio);
-
     Double getCash(String portfolioName);
 
     List<PortfolioDTO> listPortfolioDTO();
@@ -28,9 +26,10 @@ public interface PortfolioService {
 
     void updatePortfolio(Portfolio portfolio);
 
-    void updatePosition(Position position);
+    void syncUpPositionsAndDynamicsWithBroker(Portfolio portfolio);
 
-    void syncUpPositionsAndDynamics(Portfolio portfolio, Set<String> codesOfOrders);
+    //    Update by broker total trades
+    void updateDynamics(Set<String> codes, Portfolio portfolio);
 
     void deletePosition(Position position);
 }

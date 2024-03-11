@@ -3,6 +3,7 @@ package com.portfolio.manager.service;
 import com.portfolio.manager.domain.Order;
 import com.portfolio.manager.domain.Portfolio;
 import com.portfolio.manager.domain.Position;
+import com.portfolio.manager.domain.SubOrder;
 import com.portfolio.manager.dto.OrderDTO;
 import com.portfolio.manager.dto.OrderInProgressDTO;
 
@@ -21,7 +22,7 @@ public interface OrderService {
     //Estimation
     List<OrderDTO> sell(List<Position> toSell);
 
-    void addOrder(OrderDTO orderDTO, String portfolio, LocalDateTime startTime, LocalDateTime endTime);
+    void addOrder(OrderDTO orderDTO, Portfolio portfolio, LocalDateTime startTime, LocalDateTime endTime);
 
     List<OrderInProgressDTO> listOrdersInProgress(String portfolio);
 
@@ -31,6 +32,9 @@ public interface OrderService {
 
     void updateOrders(Portfolio portfolio);
 
-    List<OrderDTO> generateOrder(Map<String, BigDecimal> securityToWeight, BigDecimal cash);
+    List<OrderDTO> generateOrderPerWeight(Map<String, BigDecimal> securityToWeight, BigDecimal cash);
+
+//    No Algo, plain trade
+    void execute(SubOrder order, Long orderId, Double price, Integer vol);
 
 }
