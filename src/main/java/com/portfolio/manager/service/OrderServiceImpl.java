@@ -128,9 +128,7 @@ public class OrderServiceImpl implements OrderService {
         List<SubOrder> subOrders = algoService.splitOrders(order, startTime, endTime);
 //        Mock portfolio won't actually place sub orders
         if (portfolio.getMock()!=null && portfolio.getMock()){
-            subOrders.forEach(subOrder -> {
-                subOrder.setRemainingShare(0L);
-            });
+            subOrders.forEach(subOrder -> subOrder.setRemainingShare(0L));
         }
         order.setSubOrders(subOrders);
         orderRepo.save(order);

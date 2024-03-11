@@ -41,8 +41,4 @@ public class Portfolio extends BaseEntity {
         return getId() != null && Objects.equals(getId(), portfolio.getId());
     }
 
-    @Override
-    public int hashCode() {
-        return getClass().hashCode();
-    }
 }

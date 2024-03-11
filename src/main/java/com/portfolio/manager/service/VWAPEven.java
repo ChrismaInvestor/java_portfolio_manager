@@ -1,13 +1,9 @@
 package com.portfolio.manager.service;
 
 import com.portfolio.manager.constant.Constant;
-import com.portfolio.manager.domain.Direction;
 import com.portfolio.manager.domain.Order;
 import com.portfolio.manager.domain.SubOrder;
-import com.portfolio.manager.domain.Trade;
-import com.portfolio.manager.integration.OrderPlacementClient;
 import com.portfolio.manager.repository.SubOrderRepo;
-import com.portfolio.manager.repository.TradeRepo;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
