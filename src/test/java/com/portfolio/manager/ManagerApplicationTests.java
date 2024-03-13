@@ -2,9 +2,7 @@ package com.portfolio.manager;
 
 import com.portfolio.manager.domain.Portfolio;
 import com.portfolio.manager.domain.Position;
-import com.portfolio.manager.dto.BidAskBrokerDTO;
 import com.portfolio.manager.service.PortfolioService;
-import com.portfolio.manager.task.TradeTaskService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
@@ -19,9 +17,6 @@ import java.util.List;
 class ManagerApplicationTests {
     @Resource
     PortfolioService portfolioService;
-
-    @Resource
-    TradeTaskService tradeTaskService;
 
     @Test
     void contextLoads() {

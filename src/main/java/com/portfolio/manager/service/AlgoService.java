@@ -8,6 +8,4 @@ import java.util.List;
 
 public interface AlgoService {
     List<SubOrder> splitOrders(Order order, LocalDateTime startTime, LocalDateTime endTime);
-
-    void execute(SubOrder order, Long orderId, Double price, Integer vol);
 }

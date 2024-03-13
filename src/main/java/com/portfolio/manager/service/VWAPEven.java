@@ -1,13 +1,9 @@
 package com.portfolio.manager.service;
 
 import com.portfolio.manager.constant.Constant;
-import com.portfolio.manager.domain.Direction;
 import com.portfolio.manager.domain.Order;
 import com.portfolio.manager.domain.SubOrder;
-import com.portfolio.manager.domain.Trade;
-import com.portfolio.manager.integration.OrderPlacementClient;
 import com.portfolio.manager.repository.SubOrderRepo;
-import com.portfolio.manager.repository.TradeRepo;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -24,12 +20,6 @@ import java.util.List;
 public class VWAPEven implements AlgoService {
     @Resource
     SubOrderRepo subOrderRepo;
-
-    @Resource
-    TradeRepo tradeRepo;
-
-    @Resource
-    OrderPlacementClient orderPlacementClient;
 
     @Override
     public List<SubOrder> splitOrders(Order order, LocalDateTime startTime, LocalDateTime endTime) {
@@ -49,29 +39,6 @@ public class VWAPEven implements AlgoService {
         return subOrders;
     }
 
-    @Override
-    public void execute(SubOrder order, Long orderId, Double price, Integer vol) {
-        Trade trade = new Trade();
-        trade.setCode(order.getSecurityCode());
-        trade.setDirection(order.getBuyOrSell());
-        trade.setOrderId(orderId);
-        trade.setSubOrderId(order.getId());
-//       执行下单开始
-        if (order.getBuyOrSell().equals(Direction.买入)) {
-            String clientOrderId = orderPlacementClient.buy(trade.getCode(), price, vol);
-            trade.setClientOrderId(Long.parseLong(clientOrderId));
-        } else if (order.getBuyOrSell().equals(Direction.卖出)) {
-            String clientOrderId = orderPlacementClient.sell(trade.getCode(), price, vol);
-            trade.setClientOrderId(Long.parseLong(clientOrderId));
-        }
-
-//        执行下单结束
-        trade.setPrice(price);
-        trade.setVolume(Long.valueOf(vol));
-        order.setRemainingShare(order.getRemainingShare() - trade.getVolume());
-        tradeRepo.save(trade);
-        subOrderRepo.save(order);
-    }
 
     private void splitEven(List<SubOrder> subOrders, Long remainingAmount, Long remainingMinutes, Long multiple) {
         if (remainingMinutes == 0 || remainingAmount == 0) {

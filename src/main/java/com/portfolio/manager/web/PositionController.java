@@ -1,6 +1,7 @@
 package com.portfolio.manager.web;
 
 import com.portfolio.manager.domain.Direction;
+import com.portfolio.manager.domain.Portfolio;
 import com.portfolio.manager.domain.Position;
 import com.portfolio.manager.domain.strategy_specific.PositionBookForCrown;
 import com.portfolio.manager.dto.*;
@@ -53,7 +54,8 @@ public class PositionController {
     @PostMapping("order")
     public void addOrders(@RequestBody OrderPlacementDTO orderPlacement) {
         log.info("{}", orderPlacement);
-        orderPlacement.orders().stream().parallel().forEach(orderDTO -> orderService.addOrder(orderDTO, orderPlacement.portfolio(), orderPlacement.startTime().plusHours(8L), orderPlacement.endTime().plusHours(8L)));
+        Portfolio portfolio = portfolioService.getPortfolio(orderPlacement.portfolio());
+        orderPlacement.orders().stream().parallel().forEach(orderDTO -> orderService.addOrder(orderDTO, portfolio, orderPlacement.startTime().plusHours(8L), orderPlacement.endTime().plusHours(8L)));
         //For crown strategy only
         if (portfolioService.getPortfolio(orderPlacement.portfolio()).getTakeProfitStopLoss()) {
             orderPlacement.orders().forEach(order -> positionBookForCrownRepo.findByPortfolioNameAndSecurityCode(orderPlacement.portfolio(), order.securityCode()).ifPresentOrElse(

@@ -4,7 +4,10 @@ import com.portfolio.manager.constant.Constant;
 import com.portfolio.manager.domain.*;
 import com.portfolio.manager.dto.OrderDTO;
 import com.portfolio.manager.dto.OrderInProgressDTO;
+import com.portfolio.manager.integration.OrderPlacementClient;
 import com.portfolio.manager.repository.OrderRepo;
+import com.portfolio.manager.repository.SubOrderRepo;
+import com.portfolio.manager.repository.TradeRepo;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -34,6 +37,15 @@ public class OrderServiceImpl implements OrderService {
 
     @Resource
     private AlgoService algoService;
+
+    @Resource
+    TradeRepo tradeRepo;
+
+    @Resource
+    OrderPlacementClient orderPlacementClient;
+
+    @Resource
+    SubOrderRepo subOrderRepo;
 
 
     @Override
@@ -106,14 +118,19 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public void addOrder(OrderDTO orderDTO, String portfolio, LocalDateTime startTime, LocalDateTime endTime) {
+    public void addOrder(OrderDTO orderDTO, Portfolio portfolio, LocalDateTime startTime, LocalDateTime endTime) {
         Order order = new Order();
         order.setPlannedShare(orderDTO.share());
         order.setRemainingShare(orderDTO.share());
         order.setSecurityCode(orderDTO.securityCode().split("\\.")[0]);
-        order.setPortfolioName(portfolio);
+        order.setPortfolioName(portfolio.getName());
         order.setBuyOrSell(orderDTO.buyOrSell());
-        order.setSubOrders(algoService.splitOrders(order, startTime, endTime));
+        List<SubOrder> subOrders = algoService.splitOrders(order, startTime, endTime);
+//        Mock portfolio won't actually place sub orders
+        if (portfolio.getMock()!=null && portfolio.getMock()){
+            subOrders.forEach(subOrder -> subOrder.setRemainingShare(0L));
+        }
+        order.setSubOrders(subOrders);
         orderRepo.save(order);
     }
 
@@ -149,7 +166,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public List<OrderDTO> generateOrder(Map<String, BigDecimal> securityToWeight, BigDecimal cash) {
+    public List<OrderDTO> generateOrderPerWeight(Map<String, BigDecimal> securityToWeight, BigDecimal cash) {
         final BigDecimal totalWeight = securityToWeight.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
         final BigDecimal unitCash = cash.divide(totalWeight, RoundingMode.HALF_DOWN).setScale(2, RoundingMode.HALF_DOWN);
         List<OrderDTO> orders = new ArrayList<>();
@@ -168,6 +185,30 @@ public class OrderServiceImpl implements OrderService {
             orders.add(order);
         } );
         return orders;
+    }
+
+    @Override
+    public void execute(SubOrder order, Long orderId, Double price, Integer vol) {
+        Trade trade = new Trade();
+        trade.setCode(order.getSecurityCode());
+        trade.setDirection(order.getBuyOrSell());
+        trade.setOrderId(orderId);
+        trade.setSubOrderId(order.getId());
+//       执行下单开始
+        if (order.getBuyOrSell().equals(Direction.买入)) {
+            String clientOrderId = orderPlacementClient.buy(trade.getCode(), price, vol);
+            trade.setClientOrderId(Long.parseLong(clientOrderId));
+        } else if (order.getBuyOrSell().equals(Direction.卖出)) {
+            String clientOrderId = orderPlacementClient.sell(trade.getCode(), price, vol);
+            trade.setClientOrderId(Long.parseLong(clientOrderId));
+        }
+
+//        执行下单结束
+        trade.setPrice(price);
+        trade.setVolume(Long.valueOf(vol));
+        order.setRemainingShare(order.getRemainingShare() - trade.getVolume());
+        tradeRepo.save(trade);
+        subOrderRepo.save(order);
     }
 
 }

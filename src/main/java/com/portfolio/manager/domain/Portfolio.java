@@ -31,6 +31,8 @@ public class Portfolio extends BaseEntity {
 
     private Boolean takeProfitStopLoss;
 
+    private Boolean mock;
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -39,8 +41,4 @@ public class Portfolio extends BaseEntity {
         return getId() != null && Objects.equals(getId(), portfolio.getId());
     }
 
-    @Override
-    public int hashCode() {
-        return getClass().hashCode();
-    }
 }

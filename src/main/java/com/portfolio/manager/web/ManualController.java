@@ -34,7 +34,7 @@ public class ManualController {
         Portfolio portfolio = portfolioService.getPortfolio(manualInput.portfolioName());
         Dynamics dynamics = portfolioService.getDynamics(portfolio);
         Map<String, BigDecimal> map = manualInput.securityAndWeights().stream().collect(Collectors.toMap(SecurityAndWeight::securityCode, SecurityAndWeight::weight));
-        List<OrderDTO> orders= orderService.generateOrder(map, BigDecimal.valueOf(dynamics.getCash()));
+        List<OrderDTO> orders= orderService.generateOrderPerWeight(map, BigDecimal.valueOf(dynamics.getTotalMarketValue()));
         log.info("orders: {}", orders);
         return orders;
     }
