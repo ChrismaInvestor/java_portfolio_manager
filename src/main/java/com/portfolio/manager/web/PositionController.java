@@ -55,7 +55,7 @@ public class PositionController {
     public void addOrders(@RequestBody OrderPlacementDTO orderPlacement) {
         log.info("{}", orderPlacement);
         Portfolio portfolio = portfolioService.getPortfolio(orderPlacement.portfolio());
-        orderPlacement.orders().stream().parallel().forEach(orderDTO -> orderService.addOrder(orderDTO, portfolio, orderPlacement.startTime().plusHours(8L), orderPlacement.endTime().plusHours(8L)));
+        orderPlacement.orders().forEach(orderDTO -> orderService.addOrder(orderDTO, portfolio, orderPlacement.startTime().plusHours(8L), orderPlacement.endTime().plusHours(8L)));
         //For crown strategy only
         if (portfolioService.getPortfolio(orderPlacement.portfolio()).getTakeProfitStopLoss()) {
             orderPlacement.orders().forEach(order -> positionBookForCrownRepo.findByPortfolioNameAndSecurityCode(orderPlacement.portfolio(), order.securityCode()).ifPresentOrElse(

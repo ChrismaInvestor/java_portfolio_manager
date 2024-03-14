@@ -127,10 +127,11 @@ public class OrderServiceImpl implements OrderService {
         order.setBuyOrSell(orderDTO.buyOrSell());
         List<SubOrder> subOrders = algoService.splitOrders(order, startTime, endTime);
 //        Mock portfolio won't actually place sub orders
-        if (portfolio.getMock()!=null && portfolio.getMock()){
+        if (portfolio.getMock() != null && portfolio.getMock()) {
             subOrders.forEach(subOrder -> subOrder.setRemainingShare(0L));
         }
         order.setSubOrders(subOrders);
+        subOrderRepo.saveAll(subOrders);
         orderRepo.save(order);
     }
 
@@ -170,7 +171,7 @@ public class OrderServiceImpl implements OrderService {
         final BigDecimal totalWeight = securityToWeight.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
         final BigDecimal unitCash = cash.divide(totalWeight, RoundingMode.HALF_DOWN).setScale(2, RoundingMode.HALF_DOWN);
         List<OrderDTO> orders = new ArrayList<>();
-        securityToWeight.forEach((securityCode, weight)->{
+        securityToWeight.forEach((securityCode, weight) -> {
             BigDecimal perCash = unitCash.multiply(weight).setScale(2, RoundingMode.HALF_DOWN);
             long multiple = securityCode.startsWith("11") || securityCode.startsWith("12") ? Constant.CONVERTIBLE_BOND_MULTIPLE : Constant.STOCK_MULTIPLE;
             String internalCode = securityCode.split("\\.")[0];
@@ -183,7 +184,7 @@ public class OrderServiceImpl implements OrderService {
             BigDecimal volWithoutMultiple = perCash.divide(price.multiply(BigDecimal.valueOf(multiple)), RoundingMode.HALF_EVEN).setScale(0, RoundingMode.DOWN);
             OrderDTO order = new OrderDTO(Direction.买入, volWithoutMultiple.multiply(BigDecimal.valueOf(multiple)).longValue(), securityService.getSecurityName(securityCode.split("\\.")[0]), securityCode, volWithoutMultiple.multiply(price).multiply(BigDecimal.valueOf(multiple)).doubleValue());
             orders.add(order);
-        } );
+        });
         return orders;
     }
 

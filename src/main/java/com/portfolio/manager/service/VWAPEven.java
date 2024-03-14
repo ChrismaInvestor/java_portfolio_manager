@@ -18,9 +18,6 @@ import java.util.List;
 @Slf4j
 @Service
 public class VWAPEven implements AlgoService {
-    @Resource
-    SubOrderRepo subOrderRepo;
-
     @Override
     public List<SubOrder> splitOrders(Order order, LocalDateTime startTime, LocalDateTime endTime) {
         long minutes = Duration.between(startTime, endTime).toMinutes();
@@ -35,7 +32,6 @@ public class VWAPEven implements AlgoService {
             subOrders.get(i).setSecurityCode(order.getSecurityCode());
         }
         log.info("Code: {}, Suborders: {}", order.getSecurityCode(), subOrders);
-        subOrderRepo.saveAll(subOrders);
         return subOrders;
     }
 
