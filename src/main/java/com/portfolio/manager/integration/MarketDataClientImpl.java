@@ -42,7 +42,8 @@ public class MarketDataClientImpl implements MarketDataClient {
         try {
             bidAsk = restTemplate.exchange("http://" + hostIP + "/bidAsk/{codes}", HttpMethod.GET, null, new ParameterizedTypeReference<>() {
             }, String.join(",", securityCodes));
-            return Objects.requireNonNull(bidAsk.getBody()).stream().map(v -> new BidAskBrokerDTO(v.get("securityCode").toString(), Double.parseDouble(v.get("askPrice1").toString()), Double.parseDouble(v.get("bidPrice1").toString()), Integer.parseInt(v.get("askVol1").toString()), Integer.parseInt(v.get("bidVol1").toString()), Double.parseDouble(v.get("lastPrice").toString()), Double.parseDouble(v.get("lastClose").toString()))).toList();
+            return Objects.requireNonNull(bidAsk.getBody()).stream().map(v -> new BidAskBrokerDTO(v.get("securityCode").toString(), Double.parseDouble(v.get("askPrice1").toString()), Double.parseDouble(v.get("bidPrice1").toString()), Integer.parseInt(v.get("askVol1").toString()), Integer.parseInt(v.get("bidVol1").toString()), Double.parseDouble(v.get("lastPrice").toString()), Double.parseDouble(v.get("lastClose").toString()),
+                    Integer.parseInt(v.get("askVol2").toString()), Double.parseDouble(v.get("askPrice2").toString()),Integer.parseInt(v.get("bidVol2").toString()), Double.parseDouble(v.get("bidPrice2").toString()))).toList();
         } catch (Exception e) {
             log.error("Bid ask query: {}", e.getMessage());
         }
