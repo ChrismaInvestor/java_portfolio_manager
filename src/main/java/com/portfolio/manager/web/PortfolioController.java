@@ -2,11 +2,14 @@ package com.portfolio.manager.web;
 
 import com.portfolio.manager.domain.Dynamics;
 import com.portfolio.manager.domain.Investor;
+import com.portfolio.manager.domain.Nav;
 import com.portfolio.manager.domain.Portfolio;
 import com.portfolio.manager.dto.InvestorPLDTO;
+import com.portfolio.manager.dto.NavDTO;
 import com.portfolio.manager.dto.PortfolioDTO;
 import com.portfolio.manager.repository.DynamicsRepo;
 import com.portfolio.manager.repository.InvestorRepo;
+import com.portfolio.manager.repository.NavRepo;
 import com.portfolio.manager.repository.PortfolioRepo;
 import com.portfolio.manager.service.PortfolioService;
 import com.portfolio.manager.util.Util;
@@ -16,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -36,6 +40,9 @@ public class PortfolioController {
     @Resource
     InvestorRepo investorRepo;
 
+    @Resource
+    NavRepo navRepo;
+
     @GetMapping
     public List<PortfolioDTO> listPortfolio() {
         return portfolioService.listPortfolioDTO();
@@ -49,6 +56,13 @@ public class PortfolioController {
     @GetMapping("portfolio")
     public Portfolio getPortfolio(@RequestParam(name = "currentPortfolio") String portfolio) {
         return portfolioRepo.findByName(portfolio);
+    }
+
+    @GetMapping("nav")
+    public List<NavDTO> listNav(){
+        List<Nav> ans = new ArrayList<>();
+        portfolioRepo.findAll().forEach(portfolio -> ans.addAll(navRepo.findByPortfolioName(portfolio.getName())));
+        return ans.stream().map(nav -> new NavDTO(nav.getCreateTime().toLocalDate(), nav.getNav(), nav.getPortfolioName())).toList();
     }
 
     @GetMapping("investorBook")
