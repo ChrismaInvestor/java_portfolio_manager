@@ -159,7 +159,7 @@ public class TradeTask {
 
     private boolean isTradeTime() {
         LocalDateTime now = LocalDateTime.now();
-        return !now.toLocalTime().isBefore(LocalTime.of(9, 30, 0)) && !now.toLocalTime().isAfter(LocalTime.of(14, 50, 0))
+        return !now.toLocalTime().isBefore(LocalTime.of(9, 30, 30)) && !now.toLocalTime().isAfter(LocalTime.of(14, 50, 0))
                 && !now.toLocalDate().getDayOfWeek().equals(DayOfWeek.SATURDAY) && !now.toLocalDate().getDayOfWeek().equals(DayOfWeek.SUNDAY);
     }
 
