@@ -6,15 +6,18 @@ import com.portfolio.manager.domain.strategy_specific.PositionBookForCrown;
 import com.portfolio.manager.dto.BidAskBrokerDTO;
 import com.portfolio.manager.dto.OrderDTO;
 import com.portfolio.manager.integration.MarketDataClient;
+import com.portfolio.manager.notification.Notification;
 import com.portfolio.manager.repository.PositionBookForCrownRepo;
 import com.portfolio.manager.service.OrderService;
 import com.portfolio.manager.service.PortfolioService;
 import com.portfolio.manager.util.Util;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.DayOfWeek;
@@ -42,6 +45,10 @@ public class TradeTask {
 
     @Resource
     PositionBookForCrownRepo positionBookForCrownRepo;
+
+    @Resource
+    @Qualifier("WechatPublicAccount")
+    Notification wechatPublicAccount;
 
     @Scheduled(fixedDelay = 1000L)
     public void placeOrder() {
@@ -107,10 +114,12 @@ public class TradeTask {
                     }
                     OrderDTO orderDTO = new OrderDTO(Direction.买入, positionBookForCrown.getSecurityShare(), positionBookForCrown.getSecurityName(), positionBookForCrown.getSecurityCode(), 0.0d);
                     orderService.addOrder(orderDTO, portfolio, LocalDateTime.now(), LocalDateTime.now().plusMinutes(5L));
+                    wechatPublicAccount.send("First half buy back hit", positionBookForCrown.getSecurityName());
                 } else if (currentPosition.getSecurityShare().compareTo(positionBookForCrown.getSecurityShare()) < 0) {
                     log.warn("Buy back hit: {}, difference: {}", positionBookForCrown, positionBookForCrown.getSecurityShare() - position.get(positionBookForCrown.getSecurityCode()).getSecurityShare());
                     OrderDTO orderDTO = new OrderDTO(Direction.买入, positionBookForCrown.getSecurityShare() - position.get(positionBookForCrown.getSecurityCode()).getSecurityShare(), positionBookForCrown.getSecurityName(), positionBookForCrown.getSecurityCode(), 0.0d);
                     orderService.addOrder(orderDTO, portfolio, LocalDateTime.now(), LocalDateTime.now().plusMinutes(5L));
+                    wechatPublicAccount.send("Second half buy back hit", positionBookForCrown.getSecurityName());
                 }
             });
 
@@ -131,6 +140,7 @@ public class TradeTask {
                 marketDataClient.getBidAsk(codes).forEach(
                         bidAskBrokerDTO -> {
                             if (BigDecimal.valueOf(bidAskBrokerDTO.bidPrice1()).divide(BigDecimal.valueOf(bidAskBrokerDTO.lastClose()), 4, RoundingMode.HALF_EVEN).compareTo(Constant.CROWN_TAKE_PROFIT) >= 0 ||
+                                    BigDecimal.valueOf(bidAskBrokerDTO.high()).divide(BigDecimal.valueOf(bidAskBrokerDTO.lastClose()), 4, RoundingMode.HALF_EVEN).compareTo(Constant.CROWN_TAKE_PROFIT) >= 0 ||
                                     BigDecimal.valueOf(bidAskBrokerDTO.askPrice1()).divide(BigDecimal.valueOf(bidAskBrokerDTO.lastClose()), 4, RoundingMode.HALF_EVEN).compareTo(Constant.CROWN_STOP_LOSS) <= 0) {
                                 positionBookForCrownRepo.findByPortfolioNameAndSecurityCode(portfolio.getName(), bidAskBrokerDTO.securityCode()).ifPresent(
                                         book -> {
@@ -141,6 +151,7 @@ public class TradeTask {
                                                     orderService.addOrder(orders.get(0), portfolio, LocalDateTime.now(), LocalDateTime.now().plusMinutes(1L));
                                                     book.setSellLock(true);
                                                     positionBookForCrownRepo.save(book);
+                                                    wechatPublicAccount.send("Stop hit", bidAskBrokerDTO.toString());
                                                 }
                                             }
                                         });
