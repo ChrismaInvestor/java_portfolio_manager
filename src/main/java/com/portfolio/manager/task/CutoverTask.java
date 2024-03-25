@@ -5,6 +5,7 @@ import com.portfolio.manager.domain.Investor;
 import com.portfolio.manager.domain.Nav;
 import com.portfolio.manager.domain.Portfolio;
 import com.portfolio.manager.domain.strategy_specific.PositionBookForCrown;
+import com.portfolio.manager.notification.Notification;
 import com.portfolio.manager.repository.InvestorRepo;
 import com.portfolio.manager.repository.NavRepo;
 import com.portfolio.manager.repository.PositionBookForCrownRepo;
@@ -34,6 +35,25 @@ public class CutoverTask {
 
     @Resource
     NavRepo navRepo;
+
+    @Resource
+    Notification wechatPublicAccount;
+
+    @Scheduled(cron = "59 00 15 ? * MON-FRI")
+    @Scheduled(cron = "59 30 11 ? * MON-FRI")
+    public void sendNav(){
+        portfolioService.listPortfolioDTO().forEach(portfolioDTO -> {
+            Portfolio portfolio = portfolioService.getPortfolio(portfolioDTO.name());
+            Dynamics dynamics = portfolioService.getDynamics(portfolio);
+
+            List<Investor> investors = investorRepo.findAll();
+            Map<String, BigDecimal> portfolioSharesMap = Util.getPortfolioSharesMap(investors);
+            Nav nav = new Nav();
+            nav.setPortfolioName(portfolioDTO.name());
+            nav.setNav(BigDecimal.valueOf(dynamics.getTotalMarketValue()).divide(portfolioSharesMap.get(portfolioDTO.name()), 6, RoundingMode.DOWN));
+            wechatPublicAccount.send(nav.getPortfolioName(), nav.getNav().toString());
+        });
+    }
 
     @Scheduled(cron = "0 59 23 ? * MON-FRI")
     public void cashRefresh() {

@@ -23,7 +23,7 @@ public class WechatPublicAccount implements Notification {
         try (Response response = this.httpClient.newCall(request).execute()) {
             log.info("response: {}", response);
         } catch (IOException e) {
-            log.error("Notification failed");
+            log.error("Notification failed title: {} content:{}", title, content);
         }
     }
 
