@@ -23,10 +23,7 @@ import java.math.RoundingMode;
 import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -72,10 +69,17 @@ public class TradeTask {
                     if (!subOrders.isEmpty()) {
                         subOrders.stream().parallel().forEach(subOrder -> {
                             if (order.getBuyOrSell().equals(Direction.买入)) {
-                                if (bidAsks.get(order.getSecurityCode()).askVol1() >= subOrder.getRemainingShare()) {
-                                    orderService.execute(subOrder, order.getId(), bidAsks.get(order.getSecurityCode()).askPrice1(), subOrder.getRemainingShare().intValue());
-                                } else {
-                                    orderService.execute(subOrder, order.getId(), bidAsks.get(order.getSecurityCode()).askPrice1(), bidAsks.get(order.getSecurityCode()).askVol1());
+                                Optional<PositionBookForCrown> positionBook = positionBookForCrownRepo.findByPortfolioNameAndSecurityCode(portfolioDTO.name(), order.getSecurityCode());
+                                if (positionBook.isPresent()) {
+                                    if (!positionBook.get().getBuyLock()) {
+                                        if (bidAsks.get(order.getSecurityCode()).askVol1() >= subOrder.getRemainingShare()) {
+                                            orderService.execute(subOrder, order.getId(), bidAsks.get(order.getSecurityCode()).askPrice1(), subOrder.getRemainingShare().intValue());
+                                        } else {
+                                            orderService.execute(subOrder, order.getId(), bidAsks.get(order.getSecurityCode()).askPrice1(), bidAsks.get(order.getSecurityCode()).askVol1());
+                                        }
+                                    }else{
+log.info("Buy lock");
+                                    }
                                 }
                             } else if (order.getBuyOrSell().equals(Direction.卖出)) {
                                 if (bidAsks.get(order.getSecurityCode()).bidVol1() >= subOrder.getRemainingShare()) {
@@ -150,6 +154,7 @@ public class TradeTask {
                                                     log.warn("BidAsk hit: {}", bidAskBrokerDTO);
                                                     orderService.addOrder(orders.get(0), portfolio, LocalDateTime.now(), LocalDateTime.now().plusMinutes(1L));
                                                     book.setSellLock(true);
+                                                    book.setBuyLock(true);
                                                     positionBookForCrownRepo.save(book);
                                                     wechatPublicAccount.send("Stop hit", bidAskBrokerDTO.toString());
                                                 }

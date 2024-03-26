@@ -41,7 +41,7 @@ public class CutoverTask {
 
     @Scheduled(cron = "59 00 15 ? * MON-FRI")
     @Scheduled(cron = "59 30 11 ? * MON-FRI")
-    public void sendNav(){
+    public void sendNav() {
         portfolioService.listPortfolioDTO().forEach(portfolioDTO -> {
             Portfolio portfolio = portfolioService.getPortfolio(portfolioDTO.name());
             Dynamics dynamics = portfolioService.getDynamics(portfolio);
@@ -64,7 +64,10 @@ public class CutoverTask {
             portfolioService.updateDynamics(dynamics);
 
             List<PositionBookForCrown> positionBookForCrownList = positionBookForCrownRepo.findByPortfolioName(portfolio.getName());
-            positionBookForCrownList.forEach(positionBookForCrown -> positionBookForCrown.setSellLock(false));
+            positionBookForCrownList.forEach(positionBookForCrown -> {
+                positionBookForCrown.setSellLock(false);
+                positionBookForCrown.setBuyLock(false);
+            });
             positionBookForCrownRepo.saveAll(positionBookForCrownList);
 
             List<Investor> investors = investorRepo.findAll();

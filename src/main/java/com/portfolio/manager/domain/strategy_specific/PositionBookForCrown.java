@@ -29,5 +29,8 @@ public class PositionBookForCrown extends BaseEntity {
     @Setter
     private Boolean sellLock;
 
+    @Setter
+    private Boolean buyLock = false;
+
     private Boolean buyBack = true;
 }
