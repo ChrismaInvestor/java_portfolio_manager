@@ -17,13 +17,14 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -52,41 +53,29 @@ public class TradeTask {
         portfolioService.listPortfolioDTO().forEach(portfolioDTO -> {
             //Order execution
             List<Order> orders = orderService.listPendingOrders(portfolioDTO.name());
-            Set<String> securityCodes = new HashSet<>();
+            Set<String> securityCodes = orders.stream().flatMap(order -> order.getSubOrders().stream().filter(subOrder -> this.isBetween(subOrder.getStartTime(), subOrder.getEndTime()) && subOrder.getRemainingShare() > 0)
+                    .map(SubOrder::getSecurityCode)).collect(Collectors.toSet());
 
-            orders.forEach(order -> {
-                List<SubOrder> subOrders = order.getSubOrders().stream().filter(subOrder -> this.isBetween(subOrder.getStartTime(), subOrder.getEndTime()) && subOrder.getRemainingShare() > 0).toList();
-                if (!subOrders.isEmpty()) {
-                    securityCodes.addAll(subOrders.stream().map(SubOrder::getSecurityCode).collect(Collectors.toSet()));
-                }
-            });
+            log.info("codes: {}", securityCodes);
 
             if (!securityCodes.isEmpty()) {
                 Map<String, BidAskBrokerDTO> bidAsks = marketDataClient.getBidAsk(securityCodes.stream().toList()).stream().collect(Collectors.toMap(BidAskBrokerDTO::securityCode, Function.identity()));
                 log.info("bid ask: {}", bidAsks);
                 orders.stream().parallel().forEach(order -> {
-                    List<SubOrder> subOrders = order.getSubOrders().stream().filter(subOrder -> this.isBetween(subOrder.getStartTime(), subOrder.getEndTime()) && subOrder.getRemainingShare() > 0).toList();
+                    var subOrders = order.getSubOrders().stream().filter(subOrder -> this.isBetween(subOrder.getStartTime(), subOrder.getEndTime()) && subOrder.getRemainingShare() > 0).toList();
                     if (!subOrders.isEmpty()) {
                         subOrders.stream().parallel().forEach(subOrder -> {
                             if (order.getBuyOrSell().equals(Direction.买入)) {
-                                Optional<PositionBookForCrown> positionBook = positionBookForCrownRepo.findByPortfolioNameAndSecurityCode(portfolioDTO.name(), order.getSecurityCode());
-                                if (positionBook.isPresent()) {
-                                    if (!positionBook.get().getBuyLock()) {
-                                        if (bidAsks.get(order.getSecurityCode()).askVol1() >= subOrder.getRemainingShare()) {
-                                            orderService.execute(subOrder, order.getId(), bidAsks.get(order.getSecurityCode()).askPrice1(), subOrder.getRemainingShare().intValue());
-                                        } else {
-                                            orderService.execute(subOrder, order.getId(), bidAsks.get(order.getSecurityCode()).askPrice1(), bidAsks.get(order.getSecurityCode()).askVol1());
-                                        }
-                                    }else{
-log.info("Buy lock");
+                                positionBookForCrownRepo.findByPortfolioNameAndSecurityCode(portfolioDTO.name(), order.getSecurityCode()).ifPresent(positionBook -> {
+                                    if (!positionBook.getBuyLock()) {
+                                        orderService.execute(subOrder, order.getId(), bidAsks.get(order.getSecurityCode()).askPrice1(),
+                                                Math.min(subOrder.getRemainingShare().intValue(), bidAsks.get(order.getSecurityCode()).askVol1()));
+                                    } else {
+                                        log.info("Buy lock");
                                     }
-                                }
+                                });
                             } else if (order.getBuyOrSell().equals(Direction.卖出)) {
-                                if (bidAsks.get(order.getSecurityCode()).bidVol1() >= subOrder.getRemainingShare()) {
-                                    orderService.execute(subOrder, order.getId(), bidAsks.get(order.getSecurityCode()).bidPrice1(), subOrder.getRemainingShare().intValue());
-                                } else {
-                                    orderService.execute(subOrder, order.getId(), bidAsks.get(order.getSecurityCode()).bidPrice1(), bidAsks.get(order.getSecurityCode()).bidVol1());
-                                }
+                                orderService.execute(subOrder, order.getId(), bidAsks.get(order.getSecurityCode()).bidPrice1(), Math.min(subOrder.getRemainingShare().intValue(), bidAsks.get(order.getSecurityCode()).bidVol1()));
                             }
                         });
                     }
@@ -112,7 +101,6 @@ log.info("Buy lock");
                 if (currentPosition == null ||
                         BigDecimal.valueOf(currentPosition.getSecurityShare()).divide(BigDecimal.valueOf(positionBookForCrown.getSecurityShare()), 2, RoundingMode.HALF_UP).compareTo(BigDecimal.valueOf(buyBackHalfBar)) < 0) {
                     positionBookForCrown.setSecurityShare(Util.calVolume(positionBookForCrown.getSecurityShare(), buyBackDiscount, Constant.CONVERTIBLE_BOND_MULTIPLE));
-                    log.warn("Buy back hit: {}", positionBookForCrown);
                     if (currentPosition != null) {
                         positionBookForCrown.setSecurityShare(positionBookForCrown.getSecurityShare() - currentPosition.getSecurityShare());
                     }
