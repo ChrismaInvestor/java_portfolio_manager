@@ -95,6 +95,13 @@ public class TradeTask {
         final double buyBackHalfBar = 0.2d;
         portfolioService.listPortfolio().stream().filter(Portfolio::getTakeProfitStopLoss
         ).toList().forEach(portfolio -> {
+            // Unlock all buy orders
+            List<PositionBookForCrown> positionBookForCrownList = positionBookForCrownRepo.findByPortfolioName(portfolio.getName());
+            positionBookForCrownList.forEach(positionBookForCrown -> {
+                positionBookForCrown.setBuyLock(false);
+            });
+            positionBookForCrownRepo.saveAll(positionBookForCrownList);
+
             Map<String, Position> position = portfolioService.listPosition(portfolio.getName()).stream().collect(Collectors.toMap(Position::getSecurityCode, Function.identity()));
             positionBookForCrownRepo.findByPortfolioName(portfolio.getName()).stream().filter(PositionBookForCrown::getBuyBack).parallel().forEach(positionBookForCrown -> {
                 var currentPosition = position.get(positionBookForCrown.getSecurityCode());
