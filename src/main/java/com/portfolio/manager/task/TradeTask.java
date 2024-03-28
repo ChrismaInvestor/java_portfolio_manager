@@ -95,9 +95,7 @@ public class TradeTask {
         ).toList().forEach(portfolio -> {
             // Unlock all buy orders
             List<PositionBookForCrown> positionBookForCrownList = positionBookForCrownRepo.findByPortfolioName(portfolio.getName());
-            positionBookForCrownList.forEach(positionBookForCrown -> {
-                positionBookForCrown.setBuyLock(false);
-            });
+            positionBookForCrownList.forEach(positionBookForCrown -> positionBookForCrown.setBuyLock(false));
             positionBookForCrownRepo.saveAll(positionBookForCrownList);
 
             Map<String, Position> position = portfolioService.listPosition(portfolio.getName()).stream().collect(Collectors.toMap(Position::getSecurityCode, Function.identity()));
