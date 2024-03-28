@@ -56,8 +56,6 @@ public class TradeTask {
             Set<String> securityCodes = orders.stream().flatMap(order -> order.getSubOrders().stream().filter(subOrder -> this.isBetween(subOrder.getStartTime(), subOrder.getEndTime()) && subOrder.getRemainingShare() > 0)
                     .map(SubOrder::getSecurityCode)).collect(Collectors.toSet());
 
-            log.info("codes: {}", securityCodes);
-
             if (!securityCodes.isEmpty()) {
                 Map<String, BidAskBrokerDTO> bidAsks = marketDataClient.getBidAsk(securityCodes.stream().toList()).stream().collect(Collectors.toMap(BidAskBrokerDTO::securityCode, Function.identity()));
                 log.info("bid ask: {}", bidAsks);
