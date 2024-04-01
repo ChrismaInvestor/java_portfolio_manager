@@ -23,7 +23,6 @@ import java.math.RoundingMode;
 import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -166,14 +165,17 @@ public class TradeTask {
                         }
                 );
                 // 2nd tier stop loss check
-                var currentNav = currentNavs.stream().filter(nav -> nav.getPortfolioName().equals(portfolio.getName())).findFirst();
-                currentNav.ifPresent(nav -> navRepo.findFirstByPortfolioNameOrderByCreateTimeDesc(portfolio.getName()).ifPresent(
-                        lastNav ->{
-                            if (nav.getNav().divide(lastNav.getNav(), 4, RoundingMode.HALF_UP).compareTo(BigDecimal.valueOf(0.985d)) <=0){
-                                log.info("The whole portfolio is reaching stop loss line");
+                if (currentNavs != null) {
+                    var currentNav = currentNavs.stream().filter(nav -> nav.getPortfolioName().equals(portfolio.getName())).findFirst();
+                    currentNav.ifPresent(nav -> navRepo.findFirstByPortfolioNameOrderByCreateTimeDesc(portfolio.getName()).ifPresent(
+                            lastNav -> {
+                                if (nav.getNav().divide(lastNav.getNav(), 4, RoundingMode.HALF_UP).compareTo(BigDecimal.valueOf(0.985d)) <= 0) {
+                                    log.info("The whole portfolio is reaching stop loss line");
+                                }
                             }
-                        }
-                ));
+                    ));
+                }
+
             }
 
         });
