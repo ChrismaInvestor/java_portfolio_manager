@@ -10,4 +10,6 @@ import java.util.Optional;
 @Repository
 public interface NavRepo extends JpaRepository<Nav,Long> {
     List<Nav> findByPortfolioName(String portfolioName);
+
+    Optional<Nav> findFirstByPortfolioNameOrderByCreateTimeDesc(String portfolioName);
 }

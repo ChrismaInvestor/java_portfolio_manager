@@ -7,6 +7,7 @@ import com.portfolio.manager.dto.BidAskBrokerDTO;
 import com.portfolio.manager.dto.OrderDTO;
 import com.portfolio.manager.integration.MarketDataClient;
 import com.portfolio.manager.notification.Notification;
+import com.portfolio.manager.repository.NavRepo;
 import com.portfolio.manager.repository.PositionBookForCrownRepo;
 import com.portfolio.manager.service.OrderService;
 import com.portfolio.manager.service.PortfolioService;
@@ -22,6 +23,7 @@ import java.math.RoundingMode;
 import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -31,6 +33,11 @@ import java.util.stream.Collectors;
 @Component
 @Slf4j
 public class TradeTask {
+    private final NavRepo navRepo;
+
+    public TradeTask(NavRepo navRepo) {
+        this.navRepo = navRepo;
+    }
 
     @Resource
     OrderService orderService;
@@ -43,6 +50,8 @@ public class TradeTask {
 
     @Resource
     PositionBookForCrownRepo positionBookForCrownRepo;
+
+    List<Nav> currentNavs;
 
     @Resource
     @Qualifier("WechatPublicAccount")
@@ -85,6 +94,8 @@ public class TradeTask {
             // Update order
             orderService.updateOrders(portfolio);
         });
+
+        currentNavs = portfolioService.listNavs();
     }
 
     @Scheduled(cron = "0 50 14 ? * MON-FRI")
@@ -154,6 +165,15 @@ public class TradeTask {
                             }
                         }
                 );
+                // 2nd tier stop loss check
+                var currentNav = currentNavs.stream().filter(nav -> nav.getPortfolioName().equals(portfolio.getName())).findFirst();
+                currentNav.ifPresent(nav -> navRepo.findFirstByPortfolioNameOrderByCreateTimeDesc(portfolio.getName()).ifPresent(
+                        lastNav ->{
+                            if (nav.getNav().divide(lastNav.getNav(), 4, RoundingMode.HALF_UP).compareTo(BigDecimal.valueOf(0.985d)) <=0){
+                                log.info("The whole portfolio is reaching stop loss line");
+                            }
+                        }
+                ));
             }
 
         });

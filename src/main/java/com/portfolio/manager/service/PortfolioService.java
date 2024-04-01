@@ -1,6 +1,7 @@
 package com.portfolio.manager.service;
 
 import com.portfolio.manager.domain.Dynamics;
+import com.portfolio.manager.domain.Nav;
 import com.portfolio.manager.domain.Portfolio;
 import com.portfolio.manager.domain.Position;
 import com.portfolio.manager.dto.PortfolioDTO;
@@ -32,4 +33,6 @@ public interface PortfolioService {
     void updateDynamics(Set<String> codes, Portfolio portfolio);
 
     void deletePosition(Position position);
+
+    List<Nav> listNavs();
 }

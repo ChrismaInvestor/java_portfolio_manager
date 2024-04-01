@@ -1,17 +1,11 @@
 package com.portfolio.manager.service;
 
-import com.portfolio.manager.domain.Dynamics;
-import com.portfolio.manager.domain.Order;
-import com.portfolio.manager.domain.Portfolio;
-import com.portfolio.manager.domain.Position;
+import com.portfolio.manager.domain.*;
 import com.portfolio.manager.domain.strategy_specific.PositionBookForCrown;
 import com.portfolio.manager.dto.PortfolioDTO;
 import com.portfolio.manager.dto.TradeDTO;
 import com.portfolio.manager.integration.OrderPlacementClient;
-import com.portfolio.manager.repository.DynamicsRepo;
-import com.portfolio.manager.repository.PortfolioRepo;
-import com.portfolio.manager.repository.PositionBookForCrownRepo;
-import com.portfolio.manager.repository.PositionRepo;
+import com.portfolio.manager.repository.*;
 import com.portfolio.manager.task.TradeTask;
 import com.portfolio.manager.util.Util;
 import jakarta.annotation.Resource;
@@ -19,8 +13,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -39,6 +35,9 @@ public class PortfolioServiceImpl implements PortfolioService {
 
     @Resource
     PositionBookForCrownRepo positionBookForCrownRepo;
+
+    @Resource
+    InvestorRepo investorRepo;
 
     @Resource
     OrderPlacementClient orderPlacemenClient;
@@ -172,6 +171,20 @@ public class PortfolioServiceImpl implements PortfolioService {
     @Override
     public void deletePosition(Position position) {
         positionRepo.delete(position);
+    }
+
+    @Override
+    public List<Nav> listNavs() {
+        List<Investor> investors = investorRepo.findAll();
+        Map<String, BigDecimal> portfolioSharesMap = Util.getPortfolioSharesMap(investors);
+        return this.listPortfolioDTO().stream().map(portfolioDTO -> {
+            Portfolio portfolio = this.getPortfolio(portfolioDTO.name());
+            Dynamics dynamics = this.getDynamics(portfolio);
+            Nav nav = new Nav();
+            nav.setPortfolioName(portfolioDTO.name());
+            nav.setNav(BigDecimal.valueOf(dynamics.getTotalMarketValue()).divide(portfolioSharesMap.get(portfolioDTO.name()), 6, RoundingMode.DOWN));
+            return nav;
+        }).toList();
     }
 
     @Override

@@ -42,17 +42,7 @@ public class CutoverTask {
     @Scheduled(cron = "59 00 15 ? * MON-FRI")
     @Scheduled(cron = "59 30 11 ? * MON-FRI")
     public void sendNav() {
-        portfolioService.listPortfolioDTO().forEach(portfolioDTO -> {
-            Portfolio portfolio = portfolioService.getPortfolio(portfolioDTO.name());
-            Dynamics dynamics = portfolioService.getDynamics(portfolio);
-
-            List<Investor> investors = investorRepo.findAll();
-            Map<String, BigDecimal> portfolioSharesMap = Util.getPortfolioSharesMap(investors);
-            Nav nav = new Nav();
-            nav.setPortfolioName(portfolioDTO.name());
-            nav.setNav(BigDecimal.valueOf(dynamics.getTotalMarketValue()).divide(portfolioSharesMap.get(portfolioDTO.name()), 6, RoundingMode.DOWN));
-            wechatPublicAccount.send(nav.getPortfolioName(), nav.getNav().toString());
-        });
+         portfolioService.listNavs().forEach(nav -> wechatPublicAccount.send(nav.getPortfolioName(), nav.getNav().toString()));
     }
 
     @Scheduled(cron = "0 59 23 ? * MON-FRI")
