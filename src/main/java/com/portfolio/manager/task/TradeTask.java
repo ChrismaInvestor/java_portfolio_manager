@@ -11,6 +11,7 @@ import com.portfolio.manager.repository.NavRepo;
 import com.portfolio.manager.repository.PositionBookForCrownRepo;
 import com.portfolio.manager.service.OrderService;
 import com.portfolio.manager.service.PortfolioService;
+import com.portfolio.manager.service.PositionSnapshotService;
 import com.portfolio.manager.util.Util;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -26,17 +27,15 @@ import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Component
 @Slf4j
 public class TradeTask {
-    private final NavRepo navRepo;
-
-    public TradeTask(NavRepo navRepo) {
-        this.navRepo = navRepo;
-    }
+    @Resource
+    NavRepo navRepo;
 
     @Resource
     OrderService orderService;
@@ -50,11 +49,16 @@ public class TradeTask {
     @Resource
     PositionBookForCrownRepo positionBookForCrownRepo;
 
+    @Resource
+    PositionSnapshotService positionSnapshotService;
+
     List<Nav> currentNavs;
 
     @Resource
     @Qualifier("WechatPublicAccount")
     Notification wechatPublicAccount;
+
+    public static Set<String> sellLockSet = new ConcurrentSkipListSet<>();
 
     @Scheduled(fixedDelay = 1000L)
     public void placeOrder() {
@@ -99,8 +103,8 @@ public class TradeTask {
 
     @Scheduled(cron = "0 50 14 ? * MON-FRI")
     public void buyBackForCrown() {
-        final double buyBackDiscount = 0.5d;
-        final double buyBackHalfBar = 0.2d;
+        final double BUY_BACK_DISCOUNT = 0.5d;
+        final double BUY_BACK_HALF_BAR = 0.2d;
         portfolioService.listPortfolio().stream().filter(Portfolio::getTakeProfitStopLoss
         ).toList().forEach(portfolio -> {
             // Unlock all buy orders
@@ -108,12 +112,22 @@ public class TradeTask {
             positionBookForCrownList.forEach(positionBookForCrown -> positionBookForCrown.setBuyLock(false));
             positionBookForCrownRepo.saveAll(positionBookForCrownList);
 
-            Map<String, Position> position = portfolioService.listPosition(portfolio.getName()).stream().collect(Collectors.toMap(Position::getSecurityCode, Function.identity()));
+            List<Position> positions = portfolioService.listPosition(portfolio.getName());
+            if (positions.isEmpty()){
+                positionSnapshotService.get().forEach(positionSnapshot -> {
+                    OrderDTO orderDTO = new OrderDTO(Direction.买入, positionSnapshot.getSecurityShare(), "", positionSnapshot.getSecurityCode(), 0.0d);
+                    orderService.addOrder(orderDTO, portfolio, LocalDateTime.now(), LocalDateTime.now().plusMinutes(6L));
+                    wechatPublicAccount.send("Portfolio Buy back", positionSnapshot.getSecurityCode());
+                });
+                return;
+            }
+
+            Map<String, Position> positionMap = positions.stream().collect(Collectors.toMap(Position::getSecurityCode, Function.identity()));
             positionBookForCrownRepo.findByPortfolioName(portfolio.getName()).stream().filter(PositionBookForCrown::getBuyBack).parallel().forEach(positionBookForCrown -> {
-                var currentPosition = position.get(positionBookForCrown.getSecurityCode());
+                var currentPosition = positionMap.get(positionBookForCrown.getSecurityCode());
                 if (currentPosition == null ||
-                        BigDecimal.valueOf(currentPosition.getSecurityShare()).divide(BigDecimal.valueOf(positionBookForCrown.getSecurityShare()), 2, RoundingMode.HALF_UP).compareTo(BigDecimal.valueOf(buyBackHalfBar)) < 0) {
-                    positionBookForCrown.setSecurityShare(Util.calVolume(positionBookForCrown.getSecurityShare(), buyBackDiscount, Constant.CONVERTIBLE_BOND_MULTIPLE));
+                        BigDecimal.valueOf(currentPosition.getSecurityShare()).divide(BigDecimal.valueOf(positionBookForCrown.getSecurityShare()), 2, RoundingMode.HALF_UP).compareTo(BigDecimal.valueOf(BUY_BACK_HALF_BAR)) < 0) {
+                    positionBookForCrown.setSecurityShare(Util.calVolume(positionBookForCrown.getSecurityShare(), BUY_BACK_DISCOUNT, Constant.CONVERTIBLE_BOND_MULTIPLE));
                     if (currentPosition != null) {
                         positionBookForCrown.setSecurityShare(positionBookForCrown.getSecurityShare() - currentPosition.getSecurityShare());
                     }
@@ -121,8 +135,8 @@ public class TradeTask {
                     orderService.addOrder(orderDTO, portfolio, LocalDateTime.now(), LocalDateTime.now().plusMinutes(6L));
                     wechatPublicAccount.send("First half buy back hit", positionBookForCrown.getSecurityName());
                 } else if (currentPosition.getSecurityShare().compareTo(positionBookForCrown.getSecurityShare()) < 0) {
-                    log.warn("Buy back hit: {}, difference: {}", positionBookForCrown, positionBookForCrown.getSecurityShare() - position.get(positionBookForCrown.getSecurityCode()).getSecurityShare());
-                    OrderDTO orderDTO = new OrderDTO(Direction.买入, positionBookForCrown.getSecurityShare() - position.get(positionBookForCrown.getSecurityCode()).getSecurityShare(), positionBookForCrown.getSecurityName(), positionBookForCrown.getSecurityCode(), 0.0d);
+                    log.warn("Buy back hit: {}, difference: {}", positionBookForCrown, positionBookForCrown.getSecurityShare() - positionMap.get(positionBookForCrown.getSecurityCode()).getSecurityShare());
+                    OrderDTO orderDTO = new OrderDTO(Direction.买入, positionBookForCrown.getSecurityShare() - positionMap.get(positionBookForCrown.getSecurityCode()).getSecurityShare(), positionBookForCrown.getSecurityName(), positionBookForCrown.getSecurityCode(), 0.0d);
                     orderService.addOrder(orderDTO, portfolio, LocalDateTime.now(), LocalDateTime.now().plusMinutes(6L));
                     wechatPublicAccount.send("Second half buy back hit", positionBookForCrown.getSecurityName());
                 }
@@ -147,19 +161,30 @@ public class TradeTask {
                             if (BigDecimal.valueOf(bidAskBrokerDTO.bidPrice1()).divide(BigDecimal.valueOf(bidAskBrokerDTO.lastClose()), 4, RoundingMode.HALF_EVEN).compareTo(Constant.CROWN_TAKE_PROFIT) >= 0 ||
                                     BigDecimal.valueOf(bidAskBrokerDTO.high()).divide(BigDecimal.valueOf(bidAskBrokerDTO.lastClose()), 4, RoundingMode.HALF_EVEN).compareTo(Constant.CROWN_TAKE_PROFIT) >= 0 ||
                                     BigDecimal.valueOf(bidAskBrokerDTO.askPrice1()).divide(BigDecimal.valueOf(bidAskBrokerDTO.lastClose()), 4, RoundingMode.HALF_EVEN).compareTo(Constant.CROWN_STOP_LOSS) <= 0) {
-                                positionBookForCrownRepo.findByPortfolioNameAndSecurityCode(portfolio.getName(), bidAskBrokerDTO.securityCode()).ifPresent(
+                                positionBookForCrownRepo.findByPortfolioNameAndSecurityCode(portfolio.getName(), bidAskBrokerDTO.securityCode()).ifPresentOrElse(
                                         book -> {
                                             if (!book.getSellLock()) {
                                                 List<OrderDTO> orders = orderService.sell(positions.stream().filter(position -> position.getSecurityCode().equals(bidAskBrokerDTO.securityCode())).toList());
-                                                if (!orders.isEmpty()) {
+//                                                if (!orders.isEmpty()) {
+//                                                    log.warn("BidAsk hit: {}", bidAskBrokerDTO);
+//                                                    orderService.addOrder(orders.get(0), portfolio, LocalDateTime.now(), LocalDateTime.now().plusMinutes(1L));
+//                                                    book.setSellLock(true);
+//                                                    book.setBuyLock(true);
+//                                                    positionBookForCrownRepo.save(book);
+//                                                    wechatPublicAccount.send("Stop hit", bidAskBrokerDTO.toString());
+//                                                }
+                                                orders.forEach(order -> {
                                                     log.warn("BidAsk hit: {}", bidAskBrokerDTO);
-                                                    orderService.addOrder(orders.get(0), portfolio, LocalDateTime.now(), LocalDateTime.now().plusMinutes(1L));
+                                                    orderService.addOrder(order, portfolio, LocalDateTime.now(), LocalDateTime.now().plusMinutes(1L));
                                                     book.setSellLock(true);
                                                     book.setBuyLock(true);
                                                     positionBookForCrownRepo.save(book);
                                                     wechatPublicAccount.send("Stop hit", bidAskBrokerDTO.toString());
-                                                }
+                                                });
                                             }
+                                        }, () -> {
+                                            List<Position> selectedPositions =positions.stream().filter(position -> position.getSecurityCode().equals(bidAskBrokerDTO.securityCode())).toList();
+                                            this.handleStopLoss(selectedPositions, portfolio, "Stop hit");
                                         });
                             }
                         }
@@ -171,13 +196,12 @@ public class TradeTask {
                             lastNav -> {
                                 if (nav.getNav().divide(lastNav.getNav(), 4, RoundingMode.HALF_UP).compareTo(BigDecimal.valueOf(0.985d)) <= 0) {
                                     log.info("The whole portfolio is reaching stop loss line");
+                                    this.handleStopLoss(positions, portfolio, "The whole portfolio is reaching stop loss line");
                                 }
                             }
                     ));
                 }
-
             }
-
         });
     }
 
@@ -193,8 +217,24 @@ public class TradeTask {
     }
 
     public static boolean isOrderTime() {
-        LocalDateTime now = LocalDateTime.now();
-        return !now.toLocalTime().isBefore(LocalTime.of(9, 26, 0)) && !now.toLocalTime().isAfter(LocalTime.of(23, 50, 0));
+        LocalTime now = LocalDateTime.now().toLocalTime();
+        return !now.isBefore(LocalTime.of(9, 26, 0)) && !now.isAfter(LocalTime.of(23, 50, 0));
+    }
+
+    private void handleStopLoss(List<Position> selectedPositions, Portfolio portfolio, String notificationTitle) {
+        List<OrderDTO> orders = orderService.sell(selectedPositions);
+        orders.forEach(order -> {
+            if (!sellLockSet.contains(order.securityCode())) {
+                orderService.addOrder(order, portfolio, LocalDateTime.now(), LocalDateTime.now().plusMinutes(1L));
+                wechatPublicAccount.send(notificationTitle, order.toString());
+                sellLockSet.add(order.securityCode());
+                positionBookForCrownRepo.findByPortfolioNameAndSecurityCode(portfolio.getName(), order.securityCode()).ifPresent(book ->{
+                    book.setSellLock(true);
+                    book.setBuyLock(true);
+                    positionBookForCrownRepo.save(book);
+                });
+            }
+        });
     }
 
 }

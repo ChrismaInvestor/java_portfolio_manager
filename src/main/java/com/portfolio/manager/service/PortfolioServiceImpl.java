@@ -154,16 +154,13 @@ public class PortfolioServiceImpl implements PortfolioService {
                             positionBookForCrown.setSellLock(false);
                             positionBookForCrownRepo.save(positionBookForCrown);
                         });
+                        // Remove from memory sell lock
+                        TradeTask.sellLockSet.remove(position.getSecurityCode());
                     });
                 }
             }
         });
 
-//        miniQMT could response with wrong data if it is not trading day, so keep it 0 on non-trading days.
-//        double todayTradeTotal = Util.isTradingDay() ? orderPlacemenClient.listTodayTrades().stream().filter(trade ->
-//                codes.contains(trade.securityCode())
-//        ).mapToDouble(TradeDTO::amount).sum() : 0.0d;
-//        this.updateDynamics(todayTradeTotal, portfolio);
         this.updateDynamics(codes, portfolio);
         this.updatePortfolio(portfolio);
     }
