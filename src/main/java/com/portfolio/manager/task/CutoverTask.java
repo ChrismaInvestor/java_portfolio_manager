@@ -66,6 +66,8 @@ public class CutoverTask {
             nav.setPortfolioName(portfolioDTO.name());
             nav.setNav(BigDecimal.valueOf(dynamics.getTotalMarketValue()).divide(portfolioSharesMap.get(portfolioDTO.name()), 6, RoundingMode.DOWN));
             navRepo.save(nav);
+            //清楚当日Sell Lock
+            TradeTask.sellLockSet.clear();
         });
     }
 }
