@@ -8,6 +8,7 @@ import com.portfolio.manager.dto.*;
 import com.portfolio.manager.repository.PositionBookForCrownRepo;
 import com.portfolio.manager.service.OrderService;
 import com.portfolio.manager.service.PortfolioService;
+import com.portfolio.manager.service.PositionSnapshotService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -32,6 +33,9 @@ public class PositionController {
     OrderService orderService;
 
     @Resource
+    PositionSnapshotService positionSnapshotService;
+
+    @Resource
     PositionBookForCrownRepo positionBookForCrownRepo;
 
     @PostMapping
@@ -54,6 +58,7 @@ public class PositionController {
     @PostMapping("order")
     public void addOrders(@RequestBody OrderPlacementDTO orderPlacement) {
         log.info("{}", orderPlacement);
+        positionSnapshotService.update(portfolioService.listPosition(orderPlacement.portfolio()), orderPlacement.orders());
         Portfolio portfolio = portfolioService.getPortfolio(orderPlacement.portfolio());
         orderPlacement.orders().forEach(orderDTO -> orderService.addOrder(orderDTO, portfolio, orderPlacement.startTime().plusHours(8L), orderPlacement.endTime().plusHours(8L)));
         //For crown strategy only
