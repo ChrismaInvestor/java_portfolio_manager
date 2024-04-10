@@ -165,14 +165,6 @@ public class TradeTask {
                                         book -> {
                                             if (!book.getSellLock()) {
                                                 List<OrderDTO> orders = orderService.sell(positions.stream().filter(position -> position.getSecurityCode().equals(bidAskBrokerDTO.securityCode())).toList());
-//                                                if (!orders.isEmpty()) {
-//                                                    log.warn("BidAsk hit: {}", bidAskBrokerDTO);
-//                                                    orderService.addOrder(orders.get(0), portfolio, LocalDateTime.now(), LocalDateTime.now().plusMinutes(1L));
-//                                                    book.setSellLock(true);
-//                                                    book.setBuyLock(true);
-//                                                    positionBookForCrownRepo.save(book);
-//                                                    wechatPublicAccount.send("Stop hit", bidAskBrokerDTO.toString());
-//                                                }
                                                 orders.forEach(order -> {
                                                     log.warn("BidAsk hit: {}", bidAskBrokerDTO);
                                                     orderService.addOrder(order, portfolio, LocalDateTime.now(), LocalDateTime.now().plusMinutes(1L));
@@ -194,7 +186,7 @@ public class TradeTask {
                     var currentNav = currentNavs.stream().filter(nav -> nav.getPortfolioName().equals(portfolio.getName())).findFirst();
                     currentNav.ifPresent(nav -> navRepo.findFirstByPortfolioNameOrderByCreateTimeDesc(portfolio.getName()).ifPresent(
                             lastNav -> {
-                                if (nav.getNav().divide(lastNav.getNav(), 4, RoundingMode.HALF_UP).compareTo(BigDecimal.valueOf(0.985d)) <= 0) {
+                                if (nav.getNav().divide(lastNav.getNav(), 4, RoundingMode.HALF_UP).compareTo(BigDecimal.valueOf(0.9825d)) <= 0) {
                                     log.info("The whole portfolio is reaching stop loss line");
                                     this.handleStopLoss(positions, portfolio, "The whole portfolio is reaching stop loss line");
                                 }
