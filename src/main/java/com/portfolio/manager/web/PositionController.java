@@ -5,14 +5,18 @@ import com.portfolio.manager.domain.Portfolio;
 import com.portfolio.manager.domain.Position;
 import com.portfolio.manager.domain.strategy_specific.PositionBookForCrown;
 import com.portfolio.manager.dto.*;
+import com.portfolio.manager.notification.Notification;
 import com.portfolio.manager.repository.PositionBookForCrownRepo;
 import com.portfolio.manager.service.OrderService;
 import com.portfolio.manager.service.PortfolioService;
 import com.portfolio.manager.service.PositionSnapshotService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -37,6 +41,27 @@ public class PositionController {
 
     @Resource
     PositionBookForCrownRepo positionBookForCrownRepo;
+
+    @Resource
+    @Qualifier("WechatPublicAccount")
+    Notification wechatPublicAccount;
+
+//    Temporary
+    @GetMapping("clear")
+    public String clear() {
+        LocalDateTime time = LocalDate.now().atTime(14, 50, 0);
+        portfolioService.listPortfolio().forEach(portfolio -> {
+            List<PositionBookForCrown> positionBookForCrownList = positionBookForCrownRepo.findByPortfolioName(portfolio.getName());
+            positionBookForCrownList.forEach(positionBookForCrown -> positionBookForCrown.setBuyBack(false));
+            positionBookForCrownRepo.saveAll(positionBookForCrownList);
+            portfolioService.listPosition(portfolio.getName()).forEach(position -> {
+                OrderDTO orderDTO = new OrderDTO(Direction.卖出, position.getSecurityShare(), "", position.getSecurityCode(), 0.0d);
+                orderService.addOrder(orderDTO, portfolio, time, time.plusMinutes(6L));
+                wechatPublicAccount.send("Portfolio clear at weekly last trading day", position.getSecurityCode());
+            });
+        });
+        return "succeed";
+    }
 
     @PostMapping
     public List<OrderDTO> calOrders(@RequestBody PositionDTO positionDTO) {
