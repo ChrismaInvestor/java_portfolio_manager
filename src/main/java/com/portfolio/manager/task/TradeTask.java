@@ -160,7 +160,7 @@ public class TradeTask {
                         bidAskBrokerDTO -> {
                             if (BigDecimal.valueOf(bidAskBrokerDTO.bidPrice1()).divide(BigDecimal.valueOf(bidAskBrokerDTO.lastClose()), 4, RoundingMode.HALF_EVEN).compareTo(Constant.CROWN_TAKE_PROFIT) >= 0 ||
                                     BigDecimal.valueOf(bidAskBrokerDTO.high()).divide(BigDecimal.valueOf(bidAskBrokerDTO.lastClose()), 4, RoundingMode.HALF_EVEN).compareTo(Constant.CROWN_TAKE_PROFIT) >= 0 ||
-                                    BigDecimal.valueOf(bidAskBrokerDTO.askPrice1()).divide(BigDecimal.valueOf(bidAskBrokerDTO.lastClose()), 4, RoundingMode.HALF_EVEN).compareTo(Constant.CROWN_STOP_LOSS) <= 0) {
+                                    BigDecimal.valueOf(bidAskBrokerDTO.askPrice1()).divide(BigDecimal.valueOf(bidAskBrokerDTO.lastClose()), 4, RoundingMode.HALF_EVEN).compareTo(TradeTask.getStopLossBar()) <= 0) {
                                 positionBookForCrownRepo.findByPortfolioNameAndSecurityCode(portfolio.getName(), bidAskBrokerDTO.securityCode()).ifPresentOrElse(
                                         book -> {
                                             if (!book.getSellLock()) {
@@ -211,6 +211,14 @@ public class TradeTask {
     public static boolean isOrderTime() {
         LocalTime now = LocalDateTime.now().toLocalTime();
         return !now.isBefore(LocalTime.of(9, 26, 0)) && !now.isAfter(LocalTime.of(23, 50, 0));
+    }
+
+    public static BigDecimal getStopLossBar(){
+        LocalTime now = LocalDateTime.now().toLocalTime();
+        if(!now.isBefore(LocalTime.of(9, 30, 30)) && !now.isAfter(LocalTime.of(10, 31, 0))){
+            return new BigDecimal("0.97");
+        }
+        return Constant.CROWN_STOP_LOSS;
     }
 
     private void handleStopLoss(List<Position> selectedPositions, Portfolio portfolio, String notificationTitle) {
