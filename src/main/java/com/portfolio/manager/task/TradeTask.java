@@ -215,7 +215,7 @@ public class TradeTask {
 
     public static BigDecimal getStopLossBar(){
         LocalTime now = LocalDateTime.now().toLocalTime();
-        if(!now.isBefore(LocalTime.of(9, 30, 30)) && !now.isAfter(LocalTime.of(10, 31, 0))){
+        if(!now.isBefore(LocalTime.of(9, 30, 30)) && !now.isAfter(LocalTime.of(10, 0, 30))){
             return new BigDecimal("0.97");
         }
         return Constant.CROWN_STOP_LOSS;
