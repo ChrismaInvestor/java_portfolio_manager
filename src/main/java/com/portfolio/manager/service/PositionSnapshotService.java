@@ -7,6 +7,9 @@ import com.portfolio.manager.dto.OrderDTO;
 import java.util.List;
 
 public interface PositionSnapshotService {
+    @Deprecated
     void update(List<Position> positions, List<OrderDTO> orders);
+
+    void update(List<Position> positions);
     List<PositionSnapshot> get();
 }

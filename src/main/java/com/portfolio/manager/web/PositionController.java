@@ -4,12 +4,14 @@ import com.portfolio.manager.domain.Direction;
 import com.portfolio.manager.domain.Portfolio;
 import com.portfolio.manager.domain.Position;
 import com.portfolio.manager.domain.strategy_specific.PositionBookForCrown;
-import com.portfolio.manager.dto.*;
+import com.portfolio.manager.dto.OrderDTO;
+import com.portfolio.manager.dto.OrderInProgressDTO;
+import com.portfolio.manager.dto.OrderPlacementDTO;
+import com.portfolio.manager.dto.PositionDTO;
 import com.portfolio.manager.notification.Notification;
 import com.portfolio.manager.repository.PositionBookForCrownRepo;
 import com.portfolio.manager.service.OrderService;
 import com.portfolio.manager.service.PortfolioService;
-import com.portfolio.manager.service.PositionSnapshotService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -35,9 +37,6 @@ public class PositionController {
 
     @Resource
     OrderService orderService;
-
-    @Resource
-    PositionSnapshotService positionSnapshotService;
 
     @Resource
     PositionBookForCrownRepo positionBookForCrownRepo;
@@ -83,7 +82,7 @@ public class PositionController {
     @PostMapping("order")
     public void addOrders(@RequestBody OrderPlacementDTO orderPlacement) {
         log.info("{}", orderPlacement);
-        positionSnapshotService.update(portfolioService.listPosition(orderPlacement.portfolio()), orderPlacement.orders());
+//        positionSnapshotService.update(portfolioService.listPosition(orderPlacement.portfolio()), orderPlacement.orders());
         Portfolio portfolio = portfolioService.getPortfolio(orderPlacement.portfolio());
         orderPlacement.orders().forEach(orderDTO -> orderService.addOrder(orderDTO, portfolio, orderPlacement.startTime().plusHours(8L), orderPlacement.endTime().plusHours(8L)));
         //For crown strategy only

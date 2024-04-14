@@ -10,6 +10,7 @@ import com.portfolio.manager.repository.InvestorRepo;
 import com.portfolio.manager.repository.NavRepo;
 import com.portfolio.manager.repository.PositionBookForCrownRepo;
 import com.portfolio.manager.service.PortfolioService;
+import com.portfolio.manager.service.PositionSnapshotService;
 import com.portfolio.manager.util.Util;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -39,10 +40,19 @@ public class CutoverTask {
     @Resource
     Notification wechatPublicAccount;
 
+    @Resource
+    PositionSnapshotService positionSnapshotService;
+
     @Scheduled(cron = "59 00 15 ? * MON-FRI")
     @Scheduled(cron = "59 30 11 ? * MON-FRI")
     public void sendNav() {
-         portfolioService.listNavs().forEach(nav -> wechatPublicAccount.send(nav.getPortfolioName(), nav.getNav().toString()));
+        portfolioService.listNavs().forEach(nav -> wechatPublicAccount.send(nav.getPortfolioName(), nav.getNav().toString()));
+    }
+
+    @Scheduled(cron = "59 00 15 ? * MON-FRI")
+    public void takeSnapshotOfPosition() {
+        var positions = portfolioService.listPosition("皇冠");
+        positionSnapshotService.update(positions);
     }
 
     @Scheduled(cron = "0 59 23 ? * MON-FRI")
