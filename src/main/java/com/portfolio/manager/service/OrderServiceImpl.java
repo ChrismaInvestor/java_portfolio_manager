@@ -197,6 +197,11 @@ public class OrderServiceImpl implements OrderService {
         trade.setSubOrderId(order.getId());
 //       执行下单开始
         if (order.getBuyOrSell().equals(Direction.买入)) {
+            BigDecimal cash = orderPlacementClient.checkCash();
+            if (cash.compareTo(BigDecimal.valueOf(price).multiply(BigDecimal.valueOf(vol))) < 0){
+                log.info("cash: {} below marketValue: {}", cash, BigDecimal.valueOf(price).multiply(BigDecimal.valueOf(vol)));
+                return;
+            }
             String clientOrderId = orderPlacementClient.buy(trade.getCode(), price, vol);
             trade.setClientOrderId(Long.parseLong(clientOrderId));
         } else if (order.getBuyOrSell().equals(Direction.卖出)) {

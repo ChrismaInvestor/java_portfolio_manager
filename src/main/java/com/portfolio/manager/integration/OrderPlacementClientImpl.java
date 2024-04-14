@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Slf4j
@@ -72,6 +73,19 @@ public class OrderPlacementClientImpl implements OrderPlacementClient {
             return res.getBody();
         } catch (Exception e) {
             log.error("List today trades: {}", e.getMessage());
+        }
+        return null;
+    }
+
+    @Override
+    public BigDecimal checkCash() {
+        ResponseEntity<String> res;
+        try {
+            res = restTemplate.exchange("http://" + hostIP + "/asset/cash", HttpMethod.GET, null, new ParameterizedTypeReference<>() {
+            });
+            return new BigDecimal(res.getBody());
+        } catch (Exception e) {
+            log.error("asset cash: {}", e.getMessage());
         }
         return null;
     }
