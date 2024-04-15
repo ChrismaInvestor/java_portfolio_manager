@@ -6,9 +6,12 @@ import com.portfolio.manager.domain.strategy_specific.PositionBookForCrown;
 import com.portfolio.manager.dto.BidAskBrokerDTO;
 import com.portfolio.manager.dto.OrderDTO;
 import com.portfolio.manager.integration.MarketDataClient;
+import com.portfolio.manager.integration.OrderPlacementClient;
 import com.portfolio.manager.notification.Notification;
 import com.portfolio.manager.repository.NavRepo;
 import com.portfolio.manager.repository.PositionBookForCrownRepo;
+import com.portfolio.manager.repository.SubOrderRepo;
+import com.portfolio.manager.repository.TradeRepo;
 import com.portfolio.manager.service.OrderService;
 import com.portfolio.manager.service.PortfolioService;
 import com.portfolio.manager.service.PositionSnapshotService;
@@ -26,6 +29,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.function.Function;
@@ -35,7 +39,13 @@ import java.util.stream.Collectors;
 @Slf4j
 public class TradeTask {
     @Resource
+    TradeRepo tradeRepo;
+
+    @Resource
     NavRepo navRepo;
+
+    @Resource
+    SubOrderRepo subOrderRepo;
 
     @Resource
     OrderService orderService;
@@ -45,6 +55,9 @@ public class TradeTask {
 
     @Resource
     MarketDataClient marketDataClient;
+
+    @Resource
+    OrderPlacementClient orderPlacementClient;
 
     @Resource
     PositionBookForCrownRepo positionBookForCrownRepo;
@@ -88,6 +101,26 @@ public class TradeTask {
                                 orderService.execute(subOrder, order.getId(), bidAsks.get(order.getSecurityCode()).bidPrice1(), Math.min(subOrder.getRemainingShare().intValue(), bidAsks.get(order.getSecurityCode()).bidVol1()));
                             }
                         });
+                    } else {
+                        var cancelableOrders = orderPlacementClient.queryCancelableOrders();
+                        cancelableOrders.forEach(cancelableOrder -> {
+                            Optional<Trade> trade = tradeRepo.findByClientOrderIdOrderByCreateTimeDesc(cancelableOrder.orderId()).stream().findFirst();
+                            trade.ifPresent(item -> {
+                                if (!item.getCreateTime().plusSeconds(30L).isBefore(LocalDateTime.now())) {
+                                    boolean result = orderPlacementClient.cancelOrder(cancelableOrder.orderId());
+                                    if (result) {
+                                        Optional<SubOrder> subOrder = subOrderRepo.findById(item.getSubOrderId());
+                                        subOrder.ifPresent(subOrderItem -> {
+                                            subOrderItem.setRemainingShare(Long.valueOf(cancelableOrder.cancelableVolume()));
+                                            subOrderItem.setEndTime(LocalDateTime.now().plusMinutes(1L));
+                                            subOrderRepo.save(subOrderItem);
+                                        });
+                                        item.setVolume(item.getVolume() - cancelableOrder.cancelableVolume());
+                                        tradeRepo.save(item);
+                                    }
+                                }
+                            });
+                        });
                     }
                 });
             }
@@ -113,7 +146,7 @@ public class TradeTask {
             positionBookForCrownRepo.saveAll(positionBookForCrownList);
 
             List<Position> positions = portfolioService.listPosition(portfolio.getName());
-            if (positions.isEmpty()){
+            if (positions.isEmpty()) {
                 positionSnapshotService.get().forEach(positionSnapshot -> {
                     OrderDTO orderDTO = new OrderDTO(Direction.买入, positionSnapshot.getSecurityShare(), "", positionSnapshot.getSecurityCode(), 0.0d);
                     orderService.addOrder(orderDTO, portfolio, LocalDateTime.now(), LocalDateTime.now().plusMinutes(6L));
@@ -175,7 +208,7 @@ public class TradeTask {
                                                 });
                                             }
                                         }, () -> {
-                                            List<Position> selectedPositions =positions.stream().filter(position -> position.getSecurityCode().equals(bidAskBrokerDTO.securityCode())).toList();
+                                            List<Position> selectedPositions = positions.stream().filter(position -> position.getSecurityCode().equals(bidAskBrokerDTO.securityCode())).toList();
                                             this.handleStopLoss(selectedPositions, portfolio, "Stop hit");
                                         });
                             }
@@ -213,9 +246,9 @@ public class TradeTask {
         return !now.isBefore(LocalTime.of(9, 26, 0)) && !now.isAfter(LocalTime.of(23, 50, 0));
     }
 
-    public static BigDecimal getStopLossBar(){
+    public static BigDecimal getStopLossBar() {
         LocalTime now = LocalDateTime.now().toLocalTime();
-        if(!now.isBefore(LocalTime.of(9, 30, 30)) && !now.isAfter(LocalTime.of(10, 0, 30))){
+        if (!now.isBefore(LocalTime.of(9, 30, 30)) && !now.isAfter(LocalTime.of(10, 0, 30))) {
             return new BigDecimal("0.97");
         }
         return Constant.CROWN_STOP_LOSS;
@@ -228,7 +261,7 @@ public class TradeTask {
                 orderService.addOrder(order, portfolio, LocalDateTime.now(), LocalDateTime.now().plusMinutes(1L));
                 wechatPublicAccount.send(notificationTitle, order.toString());
                 sellLockSet.add(order.securityCode());
-                positionBookForCrownRepo.findByPortfolioNameAndSecurityCode(portfolio.getName(), order.securityCode()).ifPresent(book ->{
+                positionBookForCrownRepo.findByPortfolioNameAndSecurityCode(portfolio.getName(), order.securityCode()).ifPresent(book -> {
                     book.setSellLock(true);
                     book.setBuyLock(true);
                     positionBookForCrownRepo.save(book);

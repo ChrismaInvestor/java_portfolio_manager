@@ -1,5 +1,6 @@
 package com.portfolio.manager.integration;
 
+import com.portfolio.manager.dto.CancelableOrderDTO;
 import com.portfolio.manager.dto.PositionIntegrateDTO;
 import com.portfolio.manager.dto.TradeDTO;
 import jakarta.annotation.Resource;
@@ -78,7 +79,7 @@ public class OrderPlacementClientImpl implements OrderPlacementClient {
     }
 
     @Override
-    public BigDecimal checkCash() {
+    public BigDecimal queryCash() {
         ResponseEntity<String> res;
         try {
             res = restTemplate.exchange("http://" + hostIP + "/asset/cash", HttpMethod.GET, null, new ParameterizedTypeReference<>() {
@@ -86,6 +87,34 @@ public class OrderPlacementClientImpl implements OrderPlacementClient {
             return new BigDecimal(res.getBody());
         } catch (Exception e) {
             log.error("asset cash: {}", e.getMessage());
+        }
+        return null;
+    }
+
+    @Override
+    public List<CancelableOrderDTO> queryCancelableOrders() {
+        ResponseEntity<List<CancelableOrderDTO>> res;
+        try {
+            res = restTemplate.exchange("http://" + hostIP + "/order/cancelable", HttpMethod.GET, null, new ParameterizedTypeReference<>() {
+            });
+            return res.getBody();
+        } catch (Exception e) {
+            log.error("cancelable orders: {}", e.getMessage());
+        }
+        return null;
+    }
+
+    @Override
+    public Boolean cancelOrder(Long orderId) {
+        ResponseEntity<String> actionId;
+        try {
+            actionId = restTemplate.exchange("http://" + hostIP + "/order/cancel/{orderId}", HttpMethod.GET, null, new ParameterizedTypeReference<>() {
+            }, orderId);
+            if (actionId.getBody() != null) {
+                return Long.parseLong(actionId.getBody()) >= 0;
+            }
+        } catch (Exception e) {
+            log.error("Buy query: {}", e.getMessage());
         }
         return null;
     }

@@ -1,5 +1,6 @@
 package com.portfolio.manager.integration;
 
+import com.portfolio.manager.dto.CancelableOrderDTO;
 import com.portfolio.manager.dto.PositionIntegrateDTO;
 import com.portfolio.manager.dto.TradeDTO;
 
@@ -18,5 +19,9 @@ public interface OrderPlacementClient {
 
     List<TradeDTO> listTodayTrades();
 
-    BigDecimal checkCash();
+    BigDecimal queryCash();
+
+    List<CancelableOrderDTO> queryCancelableOrders();
+
+    Boolean cancelOrder(Long orderId);
 }
