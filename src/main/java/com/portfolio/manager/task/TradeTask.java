@@ -101,29 +101,28 @@ public class TradeTask {
                                 orderService.execute(subOrder, order.getId(), bidAsks.get(order.getSecurityCode()).bidPrice1(), Math.min(subOrder.getRemainingShare().intValue(), bidAsks.get(order.getSecurityCode()).bidVol1()));
                             }
                         });
-                    } else {
-                        var cancelableOrders = orderPlacementClient.queryCancelableOrders();
-                        cancelableOrders.forEach(cancelableOrder -> {
-                            Optional<Trade> trade = tradeRepo.findByClientOrderIdOrderByCreateTimeDesc(cancelableOrder.orderId()).stream().findFirst();
-                            trade.ifPresent(item -> {
-                                if (!item.getCreateTime().plusSeconds(30L).isBefore(LocalDateTime.now())) {
-                                    boolean result = orderPlacementClient.cancelOrder(cancelableOrder.orderId());
-                                    if (result) {
-                                        Optional<SubOrder> subOrder = subOrderRepo.findById(item.getSubOrderId());
-                                        subOrder.ifPresent(subOrderItem -> {
-                                            subOrderItem.setRemainingShare(Long.valueOf(cancelableOrder.cancelableVolume()));
-                                            subOrderItem.setEndTime(LocalDateTime.now().plusMinutes(1L));
-                                            subOrderRepo.save(subOrderItem);
-                                        });
-                                        item.setVolume(item.getVolume() - cancelableOrder.cancelableVolume());
-                                        tradeRepo.save(item);
-                                    }
-                                }
-                            });
-                        });
                     }
                 });
             }
+            var cancelableOrders = orderPlacementClient.queryCancelableOrders();
+            cancelableOrders.forEach(cancelableOrder -> {
+                Optional<Trade> trade = tradeRepo.findByClientOrderIdOrderByCreateTimeDesc(cancelableOrder.orderId()).stream().findFirst();
+                trade.ifPresent(item -> {
+                    if (item.getCreateTime().plusSeconds(30L).isBefore(LocalDateTime.now())) {
+                        boolean result = orderPlacementClient.cancelOrder(cancelableOrder.orderId());
+                        if (result) {
+                            Optional<SubOrder> subOrder = subOrderRepo.findById(item.getSubOrderId());
+                            subOrder.ifPresent(subOrderItem -> {
+                                subOrderItem.setRemainingShare(Long.valueOf(cancelableOrder.cancelableVolume()));
+                                subOrderItem.setEndTime(LocalDateTime.now().plusMinutes(1L));
+                                subOrderRepo.save(subOrderItem);
+                            });
+                            item.setVolume(item.getVolume() - cancelableOrder.cancelableVolume());
+                            tradeRepo.save(item);
+                        }
+                    }
+                });
+            });
             Portfolio portfolio = portfolioService.getPortfolio(portfolioDTO.name());
             // Update position
             portfolioService.syncUpPositionsAndDynamicsWithBroker(portfolio);
@@ -248,7 +247,7 @@ public class TradeTask {
 
     public static BigDecimal getStopLossBar() {
         LocalTime now = LocalDateTime.now().toLocalTime();
-        if (!now.isBefore(LocalTime.of(9, 30, 30)) && !now.isAfter(LocalTime.of(10, 0, 30))) {
+        if (!now.isBefore(LocalTime.of(9, 30, 30)) && !now.isAfter(LocalTime.of(10, 30, 30))) {
             return new BigDecimal("0.97");
         }
         return Constant.CROWN_STOP_LOSS;
