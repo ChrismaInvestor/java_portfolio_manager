@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -45,7 +46,7 @@ public class PositionController {
     @Qualifier("WechatPublicAccount")
     Notification wechatPublicAccount;
 
-//    Temporary
+    //    Temporary
     @GetMapping("clear")
     public String clear() {
         LocalDateTime time = LocalDate.now().atTime(14, 50, 0);
@@ -92,6 +93,10 @@ public class PositionController {
                         Optional<Position> currentPosition = portfolioService.listPosition(orderPlacement.portfolio()).stream().filter(currentP -> currentP.getSecurityCode().equals(order.securityCode())).findFirst();
                         if (order.buyOrSell().equals(Direction.买入)) {
                             currentPosition.ifPresentOrElse(currentP -> p.setSecurityShare(currentP.getSecurityShare() + order.share()), () -> p.setSecurityShare(order.share()));
+                            LocalDateTime orderStartTime = orderPlacement.startTime().plusHours(8L);
+                            if (!orderStartTime.isBefore(orderStartTime.toLocalDate().atTime(2, 50, 0)) && ChronoUnit.DAYS.between(orderStartTime.toLocalDate(), LocalDate.now()) == 0) {
+                                p.setBuyBack(false);
+                            }
                             positionBookForCrownRepo.save(p);
                         } else if (order.buyOrSell().equals(Direction.卖出)) {
                             currentPosition.ifPresent(currentP -> {
