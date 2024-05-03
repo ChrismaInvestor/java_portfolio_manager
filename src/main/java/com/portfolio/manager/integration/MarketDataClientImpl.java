@@ -1,6 +1,7 @@
 package com.portfolio.manager.integration;
 
 import com.portfolio.manager.domain.Price;
+import com.portfolio.manager.domain.strategy_specific.CbStockMapping;
 import com.portfolio.manager.dto.BidAskBrokerDTO;
 import com.portfolio.manager.dto.SecurityDTO;
 import jakarta.annotation.Resource;
@@ -32,6 +33,19 @@ public class MarketDataClientImpl implements MarketDataClient {
             return stocks.getBody();
         } catch (Exception e) {
             log.error("Stocks query: {}", e.getMessage());
+        }
+        return null;
+    }
+
+    @Override
+    public List<CbStockMapping> listCbStockMapping() {
+        ResponseEntity<List<CbStockMapping>> cbStockMappings;
+        try {
+            cbStockMappings = restTemplate.exchange("http://" + hostIP + "/cbStockMapping", HttpMethod.GET, null, new ParameterizedTypeReference<>() {
+            });
+            return cbStockMappings.getBody();
+        } catch (Exception e) {
+            log.error("Cb Stock Mapping query: {}", e.getMessage());
         }
         return null;
     }

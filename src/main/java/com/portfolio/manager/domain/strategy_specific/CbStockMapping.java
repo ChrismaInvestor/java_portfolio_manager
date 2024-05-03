@@ -1,4 +1,4 @@
-package com.portfolio.manager.domain;
+package com.portfolio.manager.domain.strategy_specific;
 
 import com.portfolio.manager.domain.base.BaseEntity;
 import jakarta.persistence.Column;
@@ -9,13 +9,15 @@ import lombok.Setter;
 import lombok.ToString;
 
 @Getter
-@Setter
 @RequiredArgsConstructor
-@Entity(name = "security")
 @ToString(callSuper = true)
-public class Security extends BaseEntity {
-    @Column(unique = true, length = 6)
-    private String code;
-    @Column(length = 20)
-    private String name;
+@Entity
+public class CbStockMapping extends BaseEntity {
+    @Setter
+    @Column(length = 6, unique = true)
+    private String cbCode;
+
+    @Setter
+    @Column(length = 6)
+    private String stockCode;
 }

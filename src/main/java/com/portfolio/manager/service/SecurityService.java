@@ -10,4 +10,6 @@ public interface SecurityService {
     void addSecurity(Security security);
 
     List<Security> listExistingStocks();
+
+    void clearData();
 }

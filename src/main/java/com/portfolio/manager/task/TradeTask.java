@@ -8,13 +8,11 @@ import com.portfolio.manager.dto.OrderDTO;
 import com.portfolio.manager.integration.MarketDataClient;
 import com.portfolio.manager.integration.OrderPlacementClient;
 import com.portfolio.manager.notification.Notification;
-import com.portfolio.manager.repository.NavRepo;
-import com.portfolio.manager.repository.PositionBookForCrownRepo;
-import com.portfolio.manager.repository.SubOrderRepo;
-import com.portfolio.manager.repository.TradeRepo;
+import com.portfolio.manager.repository.*;
 import com.portfolio.manager.service.OrderService;
 import com.portfolio.manager.service.PortfolioService;
 import com.portfolio.manager.service.PositionSnapshotService;
+import com.portfolio.manager.service.sell.CrownSellStrategy;
 import com.portfolio.manager.util.Util;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -65,6 +64,9 @@ public class TradeTask {
     @Resource
     PositionSnapshotService positionSnapshotService;
 
+    @Resource
+    CbStockMappingRepo cbStockMappingRepo;
+
     List<Nav> currentNavs;
 
     @Resource
@@ -72,6 +74,8 @@ public class TradeTask {
     Notification wechatPublicAccount;
 
     public static Set<String> sellLockSet = new ConcurrentSkipListSet<>();
+
+    public static Map<String, CrownSellStrategy> cbSellStrategyMapping = new ConcurrentHashMap<>();
 
     @Scheduled(fixedDelay = 1000L)
     public void placeOrder() {
@@ -190,9 +194,10 @@ public class TradeTask {
             if (!codes.isEmpty()) {
                 marketDataClient.getBidAsk(codes).forEach(
                         bidAskBrokerDTO -> {
-                            if (BigDecimal.valueOf(bidAskBrokerDTO.bidPrice1()).divide(BigDecimal.valueOf(bidAskBrokerDTO.lastClose()), 4, RoundingMode.HALF_EVEN).compareTo(Constant.CROWN_TAKE_PROFIT) >= 0 ||
-                                    BigDecimal.valueOf(bidAskBrokerDTO.high()).divide(BigDecimal.valueOf(bidAskBrokerDTO.lastClose()), 4, RoundingMode.HALF_EVEN).compareTo(Constant.CROWN_TAKE_PROFIT) >= 0 ||
-                                    BigDecimal.valueOf(bidAskBrokerDTO.askPrice1()).divide(BigDecimal.valueOf(bidAskBrokerDTO.lastClose()), 4, RoundingMode.HALF_EVEN).compareTo(TradeTask.getStopLossBar()) <= 0) {
+//                            if (BigDecimal.valueOf(bidAskBrokerDTO.bidPrice1()).divide(BigDecimal.valueOf(bidAskBrokerDTO.lastClose()), 4, RoundingMode.HALF_EVEN).compareTo(Constant.CROWN_TAKE_PROFIT) >= 0 ||
+//                                    BigDecimal.valueOf(bidAskBrokerDTO.high()).divide(BigDecimal.valueOf(bidAskBrokerDTO.lastClose()), 4, RoundingMode.HALF_EVEN).compareTo(Constant.CROWN_TAKE_PROFIT) >= 0 ||
+//                                    BigDecimal.valueOf(bidAskBrokerDTO.askPrice1()).divide(BigDecimal.valueOf(bidAskBrokerDTO.lastClose()), 4, RoundingMode.HALF_EVEN).compareTo(TradeTask.getStopLossBar()) <= 0) {
+                            if (this.isSellable(bidAskBrokerDTO)) {
                                 positionBookForCrownRepo.findByPortfolioNameAndSecurityCode(portfolio.getName(), bidAskBrokerDTO.securityCode()).ifPresentOrElse(
                                         book -> {
                                             if (!book.getSellLock()) {
@@ -218,7 +223,7 @@ public class TradeTask {
                     var currentNav = currentNavs.stream().filter(nav -> nav.getPortfolioName().equals(portfolio.getName())).findFirst();
                     currentNav.ifPresent(nav -> navRepo.findFirstByPortfolioNameOrderByCreateTimeDesc(portfolio.getName()).ifPresent(
                             lastNav -> {
-                                if (nav.getNav().divide(lastNav.getNav(), 4, RoundingMode.HALF_UP).compareTo(BigDecimal.valueOf(0.9825d)) <= 0) {
+                                if (nav.getNav().divide(lastNav.getNav(), 4, RoundingMode.HALF_UP).compareTo(Constant.CROWN_WHOLE_PORTFOLIO_STOP_LOSS) <= 0) {
                                     log.info("The whole portfolio is reaching stop loss line");
                                     this.handleStopLoss(positions, portfolio, "The whole portfolio is reaching stop loss line");
                                 }
@@ -251,6 +256,20 @@ public class TradeTask {
             return new BigDecimal("0.97");
         }
         return Constant.CROWN_STOP_LOSS;
+    }
+
+    public boolean isSellable(BidAskBrokerDTO bidAskBrokerDTO) {
+        log.info("price: {}", bidAskBrokerDTO);
+        if (cbSellStrategyMapping.containsKey(bidAskBrokerDTO.securityCode())) {
+            var strategy = cbSellStrategyMapping.get(bidAskBrokerDTO.securityCode());
+            strategy.updateState(bidAskBrokerDTO);
+        } else {
+            CrownSellStrategy strategy = new CrownSellStrategy(marketDataClient, cbStockMappingRepo);
+            strategy.updateState(bidAskBrokerDTO);
+            cbSellStrategyMapping.put(bidAskBrokerDTO.securityCode(), strategy);
+        }
+        log.info("strategy map: {}", cbSellStrategyMapping.get(bidAskBrokerDTO.securityCode()));
+        return cbSellStrategyMapping.get(bidAskBrokerDTO.securityCode()).isSellable();
     }
 
     private void handleStopLoss(List<Position> selectedPositions, Portfolio portfolio, String notificationTitle) {

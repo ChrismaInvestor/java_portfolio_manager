@@ -40,6 +40,10 @@ public class Util {
         return !today.getDayOfWeek().equals(DayOfWeek.SUNDAY) && !today.getDayOfWeek().equals(DayOfWeek.SATURDAY);
     }
 
+    public static BigDecimal priceMovementDivide(Double numerator, Double denominator){
+        return BigDecimal.valueOf(numerator).divide(BigDecimal.valueOf(denominator), 4, RoundingMode.HALF_EVEN);
+    }
+
     public static void main(String[] args) {
         long ans = Util.calVolume(2190L, 0.5, 10L);
         log.info("{}", ans);

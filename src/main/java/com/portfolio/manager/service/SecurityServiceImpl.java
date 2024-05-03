@@ -1,6 +1,7 @@
 package com.portfolio.manager.service;
 
 import com.portfolio.manager.domain.Security;
+import com.portfolio.manager.repository.CbStockMappingRepo;
 import com.portfolio.manager.repository.SecurityRepo;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +15,9 @@ public class SecurityServiceImpl implements SecurityService {
     @Resource
     private SecurityRepo securityRepo;
 
+    @Resource
+    private CbStockMappingRepo cbStockMappingRepo;
+
     @Override
     public String getSecurityName(String securityCode) {
         Security security = securityRepo.findOneByCode(securityCode);
@@ -22,20 +26,20 @@ public class SecurityServiceImpl implements SecurityService {
 
     @Override
     public void addSecurity(Security security) {
-        Security existedSecurity = securityRepo.findOneByCode(security.getCode());
-        if (existedSecurity == null) {
-            if (security.getName().matches(".*" + "[\\u4e00-\\u9fa5]"+ ".*")){
-                log.info("security: {}", security);
-                securityRepo.save(security);
-            }
-        } else {
-            existedSecurity.setName(security.getName());
-            securityRepo.save(existedSecurity);
+        if (security.getName().matches(".*" + "[\\u4e00-\\u9fa5]" + ".*")) {
+            log.info("security: {}", security);
+            securityRepo.save(security);
         }
     }
 
     @Override
     public List<Security> listExistingStocks() {
         return securityRepo.findAll();
+    }
+
+    @Override
+    public void clearData() {
+        securityRepo.deleteAll();
+        cbStockMappingRepo.deleteAll();
     }
 }

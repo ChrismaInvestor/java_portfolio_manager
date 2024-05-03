@@ -78,6 +78,7 @@ public class CutoverTask {
             navRepo.save(nav);
             //清楚当日Sell Lock
             TradeTask.sellLockSet.clear();
+            TradeTask.cbSellStrategyMapping.clear();
         });
     }
 }
