@@ -30,14 +30,17 @@ public class TradeTaskTest {
     @Resource
     OrderService orderService;
 
+    @Resource
+    TradeTask tradeTask;
+
     @Test
     public void buyBackForCrown() {
-        var codes = List.of("113615", "123106", "113516","113534");
+        var codes = List.of("113615", "123106", "113516", "113534", "128042");
         Map<String, CrownSellStrategy> cbSellStrategyMapping = new ConcurrentHashMap<>();
-        TradeTask tradeTask = new TradeTask();
-        marketDataClient.getBidAsk(codes).forEach(
-                bidAskBrokerDTO -> {
-                log.info("is sellable: {}", tradeTask.isSellable(bidAskBrokerDTO));
+        for (int i = 0; i < 3; i++) {
+            marketDataClient.getBidAsk(codes).forEach(
+                    bidAskBrokerDTO -> {
+                        log.info("is sellable: {}", tradeTask.isSellable(bidAskBrokerDTO));
 //                    log.info("price: {}", bidAskBrokerDTO);
 //                    if (cbSellStrategyMapping.containsKey(bidAskBrokerDTO.securityCode())) {
 //                        var strategy = cbSellStrategyMapping.get(bidAskBrokerDTO.securityCode());
@@ -48,8 +51,8 @@ public class TradeTaskTest {
 //                        cbSellStrategyMapping.put(bidAskBrokerDTO.securityCode(), strategy);
 //                    }
 //                    log.info("strategy map: {}", cbSellStrategyMapping.get(bidAskBrokerDTO.securityCode()));
-                });
-
+                    });
+        }
 //        log.info("cash: {}", orderPlacementClient.checkCash());
 //
 //        SubOrder subOrder = new SubOrder();
