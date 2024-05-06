@@ -15,7 +15,10 @@ public interface OrderPlacementClient {
     // 返回orderId
     String sell(String code, Double price, Integer vol);
 
+    @Deprecated
     PositionIntegrateDTO checkPosition(String code);
+
+    List<PositionIntegrateDTO> queryAllPositions();
 
     List<TradeDTO> listTodayTrades();
 

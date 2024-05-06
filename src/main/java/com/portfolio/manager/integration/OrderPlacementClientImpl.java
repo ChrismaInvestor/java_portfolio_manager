@@ -66,6 +66,19 @@ public class OrderPlacementClientImpl implements OrderPlacementClient {
     }
 
     @Override
+    public List<PositionIntegrateDTO> queryAllPositions() {
+        ResponseEntity<List<PositionIntegrateDTO>> res;
+        try {
+            res = restTemplate.exchange("http://" + hostIP + "/position", HttpMethod.GET, null, new ParameterizedTypeReference<>() {
+            });
+            return res.getBody();
+        } catch (Exception e) {
+            log.error("Check position: {}", e.getMessage());
+        }
+        return null;
+    }
+
+    @Override
     public List<TradeDTO> listTodayTrades() {
         ResponseEntity<List<TradeDTO>> res;
         try {

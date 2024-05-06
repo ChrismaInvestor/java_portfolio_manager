@@ -1,4 +1,4 @@
 package com.portfolio.manager.dto;
 
-public record PositionIntegrateDTO(Double unitCost, Integer vol, Double marketValue) {
+public record PositionIntegrateDTO(Double unitCost, Integer vol, Double marketValue, String code) {
 }

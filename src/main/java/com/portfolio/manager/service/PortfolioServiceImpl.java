@@ -3,6 +3,7 @@ package com.portfolio.manager.service;
 import com.portfolio.manager.domain.*;
 import com.portfolio.manager.domain.strategy_specific.PositionBookForCrown;
 import com.portfolio.manager.dto.PortfolioDTO;
+import com.portfolio.manager.dto.PositionIntegrateDTO;
 import com.portfolio.manager.dto.TradeDTO;
 import com.portfolio.manager.integration.OrderPlacementClient;
 import com.portfolio.manager.repository.*;
@@ -19,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -119,9 +121,11 @@ public class PortfolioServiceImpl implements PortfolioService {
         Set<String> securityCodesOfOrders = orderService.listOrders(portfolio.getName()).stream().parallel().filter(order -> order.getUpdateTime().toLocalDate().isEqual(today)).map(Order::getSecurityCode).collect(Collectors.toSet());
         codes.addAll(securityCodesOfOrders);
 
+        Map<String, PositionIntegrateDTO> positionOnBrokerMap = orderPlacemenClient.queryAllPositions().stream().collect(Collectors.toMap(PositionIntegrateDTO::code, Function.identity()));
 //        Update position and position book
         codes.forEach(code -> {
-            var positionOnBroker = orderPlacemenClient.checkPosition(code);
+//            var positionOnBroker = orderPlacemenClient.checkPosition(code);
+            var positionOnBroker = positionOnBrokerMap.get(code);
             if (positionOnBroker != null && TradeTask.isOrderTime()) {
                 if (positionOnBroker.vol() != null) {
                     Optional<Position> existingPosition = portfolio.getPositions().stream().filter(p -> p.getSecurityCode().equals(code)).findFirst();
