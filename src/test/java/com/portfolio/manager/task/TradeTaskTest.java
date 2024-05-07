@@ -30,12 +30,14 @@ public class TradeTaskTest {
     @Resource
     OrderService orderService;
 
+
     @Resource
     TradeTask tradeTask;
 
     @Test
     public void buyBackForCrown() {
         var codes = List.of("113615", "123106", "113516", "113534", "128042");
+        log.info("account info: {}", orderPlacementClient.queryAcct());
         Map<String, CrownSellStrategy> cbSellStrategyMapping = new ConcurrentHashMap<>();
         for (int i = 0; i < 3; i++) {
             marketDataClient.getBidAsk(codes).forEach(

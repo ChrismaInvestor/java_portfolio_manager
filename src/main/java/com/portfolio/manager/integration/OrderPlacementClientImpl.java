@@ -1,5 +1,6 @@
 package com.portfolio.manager.integration;
 
+import com.portfolio.manager.dto.AccountDTO;
 import com.portfolio.manager.dto.CancelableOrderDTO;
 import com.portfolio.manager.dto.PositionIntegrateDTO;
 import com.portfolio.manager.dto.TradeDTO;
@@ -12,7 +13,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 @Slf4j
@@ -92,12 +92,12 @@ public class OrderPlacementClientImpl implements OrderPlacementClient {
     }
 
     @Override
-    public BigDecimal queryCash() {
-        ResponseEntity<String> res;
+    public AccountDTO queryAcct() {
+        ResponseEntity<AccountDTO> res;
         try {
             res = restTemplate.exchange("http://" + hostIP + "/asset/cash", HttpMethod.GET, null, new ParameterizedTypeReference<>() {
             });
-            return new BigDecimal(res.getBody());
+            return res.getBody();
         } catch (Exception e) {
             log.error("asset cash: {}", e.getMessage());
         }

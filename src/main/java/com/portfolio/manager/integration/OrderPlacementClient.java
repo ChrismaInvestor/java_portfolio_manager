@@ -1,10 +1,10 @@
 package com.portfolio.manager.integration;
 
+import com.portfolio.manager.dto.AccountDTO;
 import com.portfolio.manager.dto.CancelableOrderDTO;
 import com.portfolio.manager.dto.PositionIntegrateDTO;
 import com.portfolio.manager.dto.TradeDTO;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 public interface OrderPlacementClient {
@@ -22,7 +22,7 @@ public interface OrderPlacementClient {
 
     List<TradeDTO> listTodayTrades();
 
-    BigDecimal queryCash();
+    AccountDTO queryAcct();
 
     List<CancelableOrderDTO> queryCancelableOrders();
 

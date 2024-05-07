@@ -2,6 +2,7 @@ package com.portfolio.manager.service;
 
 import com.portfolio.manager.domain.*;
 import com.portfolio.manager.domain.strategy_specific.PositionBookForCrown;
+import com.portfolio.manager.dto.AccountDTO;
 import com.portfolio.manager.dto.PortfolioDTO;
 import com.portfolio.manager.dto.PositionIntegrateDTO;
 import com.portfolio.manager.dto.TradeDTO;
@@ -75,7 +76,13 @@ public class PortfolioServiceImpl implements PortfolioService {
         ).mapToDouble(TradeDTO::amount).sum() : 0.0d;
         Dynamics dynamics = this.getDynamics(portfolio);
         dynamics.setCash(BigDecimal.valueOf(dynamics.getLastDayCash()).subtract(BigDecimal.valueOf(todayTradeTotal)).doubleValue());
-        dynamics.setSecurityMarketValue(portfolio.getPositions().stream().mapToDouble(Position::getMarketValue).sum());
+        AccountDTO account = orderPlacemenClient.queryAcct();
+        if (account == null) {
+            dynamics.setSecurityMarketValue(portfolio.getPositions().stream().mapToDouble(Position::getMarketValue).sum());
+        } else {
+            dynamics.setSecurityMarketValue(account.marketValue().doubleValue());
+        }
+
         dynamics.setTotalMarketValue(BigDecimal.valueOf(dynamics.getCash()).add(BigDecimal.valueOf(dynamics.getSecurityMarketValue())).doubleValue());
         this.updateDynamics(dynamics);
     }
@@ -174,6 +181,7 @@ public class PortfolioServiceImpl implements PortfolioService {
         positionRepo.delete(position);
     }
 
+    // Static calculation
     @Override
     public List<Nav> listNavs() {
         List<Investor> investors = investorRepo.findAll();
