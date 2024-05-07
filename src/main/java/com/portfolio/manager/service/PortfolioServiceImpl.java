@@ -133,8 +133,9 @@ public class PortfolioServiceImpl implements PortfolioService {
         codes.forEach(code -> {
 //            var positionOnBroker = orderPlacemenClient.checkPosition(code);
             var positionOnBroker = positionOnBrokerMap.get(code);
-            if (positionOnBroker != null && TradeTask.isOrderTime()) {
-                if (positionOnBroker.vol() != null) {
+//            if (positionOnBroker != null && TradeTask.isOrderTime()) {
+            if (TradeTask.isOrderTime()) {
+                if (positionOnBroker != null && positionOnBroker.vol() != null) {
                     Optional<Position> existingPosition = portfolio.getPositions().stream().filter(p -> p.getSecurityCode().equals(code)).findFirst();
                     existingPosition.ifPresentOrElse(currentPosition -> {
 //                        Update existing position
