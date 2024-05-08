@@ -223,7 +223,7 @@ public class TradeTask {
                     var currentNav = currentNavs.stream().filter(nav -> nav.getPortfolioName().equals(portfolio.getName())).findFirst();
                     currentNav.ifPresent(nav -> navRepo.findFirstByPortfolioNameOrderByCreateTimeDesc(portfolio.getName()).ifPresent(
                             lastNav -> {
-                                if (nav.getNav().divide(lastNav.getNav(), 4, RoundingMode.HALF_UP).compareTo(Constant.CROWN_WHOLE_PORTFOLIO_STOP_LOSS) <= 0) {
+                                if (nav.getNav().divide(lastNav.getNav(), 4, RoundingMode.HALF_UP).compareTo(Constant.CROWN_WHOLE_PORTFOLIO_STOP_LOSS_EXCEPTION) > 0 && nav.getNav().divide(lastNav.getNav(), 4, RoundingMode.HALF_UP).compareTo(Constant.CROWN_WHOLE_PORTFOLIO_STOP_LOSS) <= 0) {
                                     log.info("The whole portfolio is reaching stop loss line");
                                     this.handleStopLoss(positions, portfolio, "The whole portfolio is reaching stop loss line");
                                 }

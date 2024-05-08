@@ -1,5 +1,6 @@
 package com.portfolio.manager.task;
 
+import com.portfolio.manager.constant.Constant;
 import com.portfolio.manager.integration.MarketDataClient;
 import com.portfolio.manager.integration.OrderPlacementClient;
 import com.portfolio.manager.repository.CbStockMappingRepo;
@@ -10,6 +11,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -36,6 +39,13 @@ public class TradeTaskTest {
 
     @Test
     public void buyBackForCrown() {
+        BigDecimal lastNav = new BigDecimal("1");
+        BigDecimal currentNav = new BigDecimal("0.88");
+        if (currentNav.divide(lastNav, 4, RoundingMode.HALF_UP).compareTo(Constant.CROWN_WHOLE_PORTFOLIO_STOP_LOSS_EXCEPTION) > 0 && currentNav.divide(lastNav, 4, RoundingMode.HALF_UP).compareTo(Constant.CROWN_WHOLE_PORTFOLIO_STOP_LOSS) <= 0) {
+            log.info("The whole portfolio is reaching stop loss line");
+        }
+
+
         var codes = List.of("113615", "123106", "113516", "113534", "128042");
         log.info("account info: {}", orderPlacementClient.queryAcct());
         Map<String, CrownSellStrategy> cbSellStrategyMapping = new ConcurrentHashMap<>();

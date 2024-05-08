@@ -10,7 +10,7 @@
     </parent>
     <groupId>com.portfolio</groupId>
     <artifactId>manager</artifactId>
-    <version>0.0.40</version>
+    <version>0.0.41</version>
     <name>manager</name>
     <description>Demo project for Spring Boot</description>
     <properties>

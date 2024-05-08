@@ -19,4 +19,5 @@ public class Constant {
     public static final BigDecimal CROWN_LET_PROFIT_RUN_TAKE_PROFIT = new BigDecimal("1.065");
 
     public static final BigDecimal CROWN_WHOLE_PORTFOLIO_STOP_LOSS = BigDecimal.valueOf(0.9825d);
+    public static final BigDecimal CROWN_WHOLE_PORTFOLIO_STOP_LOSS_EXCEPTION = BigDecimal.valueOf(0.9d);
 }
