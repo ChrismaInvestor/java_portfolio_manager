@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -62,7 +63,7 @@ public class PortfolioController {
     public List<NavDTO> listNav(){
         List<Nav> ans = new ArrayList<>();
         portfolioRepo.findAll().forEach(portfolio -> ans.addAll(navRepo.findByPortfolioName(portfolio.getName())));
-        return ans.stream().map(nav -> new NavDTO(nav.getCreateTime().toLocalDate(), nav.getNav(), nav.getPortfolioName())).toList();
+        return ans.stream().filter(nav -> nav.getCreateTime().toLocalDate().isAfter(LocalDate.of(2024,4,15))).map(nav -> new NavDTO(nav.getCreateTime().toLocalDate(), nav.getNav(), nav.getPortfolioName())).toList();
     }
 
     @GetMapping("investorBook")
