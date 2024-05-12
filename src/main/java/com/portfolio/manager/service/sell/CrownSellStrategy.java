@@ -13,7 +13,7 @@ public class CrownSellStrategy {
 
     State state;
 
-    public CrownSellStrategy(MarketDataClient marketDataClient, CbStockMappingRepo cbStockMappingRepo){
+    public CrownSellStrategy(MarketDataClient marketDataClient, CbStockMappingRepo cbStockMappingRepo) {
         letProfitRunState = new LetProfitRunState(this, marketDataClient, cbStockMappingRepo);
         normalState = new NormalState(this);
         stopLossState = new StopLossState(this);
@@ -23,20 +23,24 @@ public class CrownSellStrategy {
         state = normalState;
     }
 
-    public void updateState(BidAskBrokerDTO bidAskBrokerDTO){
+    public void updateState(BidAskBrokerDTO bidAskBrokerDTO) {
         state.updateState(bidAskBrokerDTO);
     }
 
-    public boolean isSellable(){
+    public boolean isSellable() {
         return state.isSellable();
     }
 
-    void setState(State state){
+    public boolean isSlump(BidAskBrokerDTO bidAskBrokerDTO) {
+        return state.isSlump(bidAskBrokerDTO);
+    }
+
+    void setState(State state) {
         this.state = state;
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "Strategy{" +
                 "state='" + state + '\'' +
                 ", isSellable=" + this.isSellable() +

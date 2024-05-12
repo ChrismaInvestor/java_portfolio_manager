@@ -15,6 +15,8 @@ public class LockProfitState extends State {
 
     @Override
     public void updateState(BidAskBrokerDTO bidAskBrokerDTO) {
+        super.updateBid1PricesSlidingWindow(bidAskBrokerDTO);
+
         if (Util.priceMovementDivide(bidAskBrokerDTO.bidPrice1(), bidAskBrokerDTO.lastClose()).compareTo(Constant.CROWN_TAKE_PROFIT) >= 0 ||
                 Util.priceMovementDivide(bidAskBrokerDTO.high(), bidAskBrokerDTO.lastClose()).compareTo(Constant.CROWN_TAKE_PROFIT) >= 0) {
             crownSellStrategy.setState(crownSellStrategy.letProfitRunState);

@@ -223,7 +223,7 @@ public class TradeTask {
                     var currentNav = currentNavs.stream().filter(nav -> nav.getPortfolioName().equals(portfolio.getName())).findFirst();
                     currentNav.ifPresent(nav -> navRepo.findFirstByPortfolioNameOrderByCreateTimeDesc(portfolio.getName()).ifPresent(
                             lastNav -> {
-                                if (nav.getNav().divide(lastNav.getNav(), 4, RoundingMode.HALF_UP).compareTo(Constant.CROWN_WHOLE_PORTFOLIO_STOP_LOSS_EXCEPTION) > 0 && nav.getNav().divide(lastNav.getNav(), 4, RoundingMode.HALF_UP).compareTo(Constant.CROWN_WHOLE_PORTFOLIO_STOP_LOSS) <= 0) {
+                                if (nav.getNav().divide(lastNav.getNav(), 4, RoundingMode.HALF_UP).compareTo(Constant.CROWN_WHOLE_PORTFOLIO_STOP_LOSS_EXCEPTION) > 0 && nav.getNav().divide(lastNav.getNav(), 4, RoundingMode.HALF_UP).compareTo(TradeTask.getWholePortfolioStopLossBar()) <= 0) {
                                     log.info("The whole portfolio is reaching stop loss line");
                                     this.handleStopLoss(positions, portfolio, "The whole portfolio is reaching stop loss line");
                                 }
@@ -257,6 +257,25 @@ public class TradeTask {
             return new BigDecimal("0.97");
         }
         return Constant.CROWN_STOP_LOSS;
+    }
+
+    public static BigDecimal getWholePortfolioStopLossBar() {
+        LocalTime now = LocalDateTime.now().toLocalTime();
+        if (!now.isBefore(LocalTime.of(9, 30, 30)) && !now.isAfter(LocalTime.of(14, 5, 30))) {
+            return Constant.CROWN_WHOLE_PORTFOLIO_STOP_LOSS;
+        }
+        return new BigDecimal("0.985");
+    }
+
+    public boolean isSlump(BidAskBrokerDTO bidAskBrokerDTO){
+        if (cbSellStrategyMapping.containsKey(bidAskBrokerDTO.securityCode())) {
+            var strategy = cbSellStrategyMapping.get(bidAskBrokerDTO.securityCode());
+            strategy.isSlump(bidAskBrokerDTO);
+        } else {
+            CrownSellStrategy strategy = new CrownSellStrategy(marketDataClient, cbStockMappingRepo);
+            cbSellStrategyMapping.put(bidAskBrokerDTO.securityCode(), strategy);
+        }
+        return false;
     }
 
     public boolean isSellable(BidAskBrokerDTO bidAskBrokerDTO) {

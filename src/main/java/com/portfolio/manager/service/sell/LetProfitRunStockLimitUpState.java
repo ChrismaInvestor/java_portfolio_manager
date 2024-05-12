@@ -22,6 +22,8 @@ public class LetProfitRunStockLimitUpState extends State{
     }
     @Override
     public void updateState(BidAskBrokerDTO bidAskBrokerDTO) {
+        super.updateBid1PricesSlidingWindow(bidAskBrokerDTO);
+
         Optional<CbStockMapping> mapping = cbStockMappingRepo.findByCbCode(bidAskBrokerDTO.securityCode());
         mapping.ifPresent(v -> {
             Optional<BidAskBrokerDTO> bidAsk = marketDataClient.getBidAsk(List.of(v.getStockCode())).stream().findFirst();

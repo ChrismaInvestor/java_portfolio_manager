@@ -39,8 +39,9 @@ public class TradeTaskTest {
 
     @Test
     public void buyBackForCrown() {
+        log.info("whole portfolio stop loss: {}", TradeTask.getWholePortfolioStopLossBar());
         BigDecimal lastNav = new BigDecimal("1");
-        BigDecimal currentNav = new BigDecimal("0.88");
+        BigDecimal currentNav = new BigDecimal("1.01");
         if (currentNav.divide(lastNav, 4, RoundingMode.HALF_UP).compareTo(Constant.CROWN_WHOLE_PORTFOLIO_STOP_LOSS_EXCEPTION) > 0 && currentNav.divide(lastNav, 4, RoundingMode.HALF_UP).compareTo(Constant.CROWN_WHOLE_PORTFOLIO_STOP_LOSS) <= 0) {
             log.info("The whole portfolio is reaching stop loss line");
         }
@@ -53,6 +54,7 @@ public class TradeTaskTest {
             marketDataClient.getBidAsk(codes).forEach(
                     bidAskBrokerDTO -> {
                         log.info("is sellable: {}", tradeTask.isSellable(bidAskBrokerDTO));
+                        tradeTask.isSlump(bidAskBrokerDTO);
 //                    log.info("price: {}", bidAskBrokerDTO);
 //                    if (cbSellStrategyMapping.containsKey(bidAskBrokerDTO.securityCode())) {
 //                        var strategy = cbSellStrategyMapping.get(bidAskBrokerDTO.securityCode());
