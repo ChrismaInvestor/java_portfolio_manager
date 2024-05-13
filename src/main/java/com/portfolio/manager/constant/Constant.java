@@ -21,5 +21,7 @@ public class Constant {
     public static final BigDecimal CROWN_WHOLE_PORTFOLIO_STOP_LOSS = BigDecimal.valueOf(0.9825d);
     public static final BigDecimal CROWN_WHOLE_PORTFOLIO_STOP_LOSS_EXCEPTION = BigDecimal.valueOf(0.95d);
 
+    public static final BigDecimal CROWN_VWAP_BUFFER = BigDecimal.valueOf(0.008);
+
     public static final int SLUMP_MAX_SECONDS = 180;
 }

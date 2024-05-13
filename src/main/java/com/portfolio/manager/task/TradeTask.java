@@ -13,6 +13,7 @@ import com.portfolio.manager.service.OrderService;
 import com.portfolio.manager.service.PortfolioService;
 import com.portfolio.manager.service.PositionSnapshotService;
 import com.portfolio.manager.service.sell.CrownSellStrategy;
+import com.portfolio.manager.service.sell.VWAP;
 import com.portfolio.manager.util.Util;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -72,6 +73,9 @@ public class TradeTask {
     @Resource
     @Qualifier("WechatPublicAccount")
     Notification wechatPublicAccount;
+
+    @Resource
+    VWAP vwap;
 
     public static Set<String> sellLockSet = new ConcurrentSkipListSet<>();
 
@@ -234,6 +238,14 @@ public class TradeTask {
         });
     }
 
+    @Scheduled(fixedDelay = 60000L)
+    public void updateVWAP() {
+//        if (!isTradeTime()) {
+//            return;
+//        }
+        vwap.update();
+    }
+
     private boolean isBetween(LocalDateTime startTime, LocalDateTime endTime) {
         LocalDateTime now = LocalDateTime.now();
         return !now.isBefore(startTime) && !now.isAfter(endTime);
@@ -272,8 +284,6 @@ public class TradeTask {
             var strategy = cbSellStrategyMapping.get(bidAskBrokerDTO.securityCode());
             strategy.isSlump(bidAskBrokerDTO);
         } else {
-            CrownSellStrategy strategy = new CrownSellStrategy(marketDataClient, cbStockMappingRepo);
-            cbSellStrategyMapping.put(bidAskBrokerDTO.securityCode(), strategy);
         }
         return false;
     }
@@ -284,7 +294,7 @@ public class TradeTask {
             var strategy = cbSellStrategyMapping.get(bidAskBrokerDTO.securityCode());
             strategy.updateState(bidAskBrokerDTO);
         } else {
-            CrownSellStrategy strategy = new CrownSellStrategy(marketDataClient, cbStockMappingRepo);
+            CrownSellStrategy strategy = new CrownSellStrategy(marketDataClient, cbStockMappingRepo, vwap);
             strategy.updateState(bidAskBrokerDTO);
             cbSellStrategyMapping.put(bidAskBrokerDTO.securityCode(), strategy);
         }

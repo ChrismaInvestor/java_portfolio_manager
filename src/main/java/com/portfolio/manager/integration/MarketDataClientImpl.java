@@ -66,12 +66,11 @@ public class MarketDataClientImpl implements MarketDataClient {
 
     @Override
     public List<Price> listMinPrice(List<String> securityCodes) {
-        ResponseEntity<String> minPrices;
+        ResponseEntity<List<Price>> minPrices;
         try {
-            minPrices = restTemplate.exchange("http://" + hostIP + "/minPrice/{code}", HttpMethod.GET, null, new ParameterizedTypeReference<>() {
+            minPrices = restTemplate.exchange("http://" + hostIP + "/minPrice/{codes}", HttpMethod.GET, null, new ParameterizedTypeReference<>() {
             }, String.join(",", securityCodes));
-            return Collections.emptyList();
-//            return minPrices.getBody();
+            return minPrices.getBody();
         } catch (Exception e) {
             log.error("MinPrice query: {}", e.getMessage());
         }

@@ -15,29 +15,17 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @RequiredArgsConstructor
-//@Entity(name = "price")
-@EntityListeners(AuditingEntityListener.class)
-//@Table(uniqueConstraints = {@UniqueConstraint(columnNames = {"code","time"})})
 public class Price {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @CreatedDate
-    @Column(updatable = false)
-    private LocalDateTime createTime;
 
     @NotNull
     @Pattern(regexp = "[0-9]{6}")
     @Column(length = 6)
     private String code;
     @NotNull
-    private Double price;
+    private Double amount;
 
     @NotNull
     private Long volume;
 
-    @NotNull
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime time;
+    private Long time;
 }

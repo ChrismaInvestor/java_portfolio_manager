@@ -9,6 +9,7 @@ import com.portfolio.manager.task.TradeTask;
 import com.portfolio.manager.util.Util;
 import lombok.extern.slf4j.Slf4j;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
@@ -23,16 +24,21 @@ public class LetProfitRunState extends State {
 
     CbStockMappingRepo cbStockMappingRepo;
 
-    public LetProfitRunState(CrownSellStrategy crownSellStrategy, MarketDataClient marketDataClient, CbStockMappingRepo cbStockMappingRepo) {
+    VWAP vwap;
+
+    public LetProfitRunState(CrownSellStrategy crownSellStrategy, MarketDataClient marketDataClient, CbStockMappingRepo cbStockMappingRepo, VWAP vwap) {
         this.crownSellStrategy = crownSellStrategy;
         this.marketDataClient = marketDataClient;
         this.cbStockMappingRepo = cbStockMappingRepo;
+        this.vwap = vwap;
     }
 
     @Override
     public void updateState(BidAskBrokerDTO bidAskBrokerDTO) {
-        log.info("code: {}, ask price: {}, ask price2: {}", bidAskBrokerDTO.securityCode(), bidAskBrokerDTO.askPrice1(), bidAskBrokerDTO.askPrice2());
         if (this.isLetProfitRunTime()) {
+            if (!vwap.containsCode(bidAskBrokerDTO.securityCode())) {
+                vwap.addCode(bidAskBrokerDTO.securityCode());
+            }
             AtomicBoolean isStateChanged = new AtomicBoolean(false);
             Optional<CbStockMapping> mapping = cbStockMappingRepo.findByCbCode(bidAskBrokerDTO.securityCode());
             mapping.ifPresent(v -> {
@@ -47,6 +53,13 @@ public class LetProfitRunState extends State {
             if (!isStateChanged.get() && Util.priceMovementDivide(bidAskBrokerDTO.askPrice1(), bidAskBrokerDTO.lastClose()).compareTo(Constant.CROWN_LET_PROFIT_RUN_TAKE_PROFIT) < 0) {
                 crownSellStrategy.setState(crownSellStrategy.stopLossState);
             }
+
+            log.info("code: {}, vwap price: {}", bidAskBrokerDTO.securityCode(), vwap.getPrice(bidAskBrokerDTO.securityCode()));
+//            观察者模式
+            if (vwap.getPrice(bidAskBrokerDTO.securityCode()) != null && BigDecimal.valueOf(bidAskBrokerDTO.askPrice1()).compareTo(vwap.getPrice(bidAskBrokerDTO.securityCode()).subtract(Constant.CROWN_VWAP_BUFFER.multiply(BigDecimal.valueOf(bidAskBrokerDTO.lastClose())))) <= 0) {
+                crownSellStrategy.setState(crownSellStrategy.stopLossState);
+            }
+
         } else {
             if (Util.priceMovementDivide(bidAskBrokerDTO.askPrice1(), bidAskBrokerDTO.lastClose()).compareTo(TradeTask.getStopLossBar()) <= 0) {
                 crownSellStrategy.setState(crownSellStrategy.stopLossState);

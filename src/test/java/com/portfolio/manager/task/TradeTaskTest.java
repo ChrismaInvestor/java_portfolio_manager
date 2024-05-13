@@ -6,6 +6,7 @@ import com.portfolio.manager.integration.OrderPlacementClient;
 import com.portfolio.manager.repository.CbStockMappingRepo;
 import com.portfolio.manager.service.OrderService;
 import com.portfolio.manager.service.sell.CrownSellStrategy;
+import com.portfolio.manager.service.sell.VWAP;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
@@ -37,6 +38,9 @@ public class TradeTaskTest {
     @Resource
     TradeTask tradeTask;
 
+    @Resource
+    VWAP vwap;
+
     @Test
     public void buyBackForCrown() {
         log.info("whole portfolio stop loss: {}", TradeTask.getWholePortfolioStopLossBar());
@@ -47,13 +51,16 @@ public class TradeTaskTest {
         }
 
 
-        var codes = List.of("113615", "123106", "113516", "113534", "128042");
+//        var codes = List.of("118019","113615", "123106", "113516", "113534", "128042");
+        var codes = List.of("118019","123205");
+        vwap.addCode("118019");
         log.info("account info: {}", orderPlacementClient.queryAcct());
         Map<String, CrownSellStrategy> cbSellStrategyMapping = new ConcurrentHashMap<>();
         for (int i = 0; i < 3; i++) {
             marketDataClient.getBidAsk(codes).forEach(
                     bidAskBrokerDTO -> {
                         log.info("is sellable: {}", tradeTask.isSellable(bidAskBrokerDTO));
+                        tradeTask.updateVWAP();
                         tradeTask.isSlump(bidAskBrokerDTO);
 //                    log.info("price: {}", bidAskBrokerDTO);
 //                    if (cbSellStrategyMapping.containsKey(bidAskBrokerDTO.securityCode())) {

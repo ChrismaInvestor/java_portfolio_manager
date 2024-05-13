@@ -13,12 +13,12 @@ public class CrownSellStrategy {
 
     State state;
 
-    public CrownSellStrategy(MarketDataClient marketDataClient, CbStockMappingRepo cbStockMappingRepo) {
-        letProfitRunState = new LetProfitRunState(this, marketDataClient, cbStockMappingRepo);
+    public CrownSellStrategy(MarketDataClient marketDataClient, CbStockMappingRepo cbStockMappingRepo, VWAP vwap) {
+        letProfitRunState = new LetProfitRunState(this, marketDataClient, cbStockMappingRepo, vwap);
         normalState = new NormalState(this);
         stopLossState = new StopLossState(this);
         lockProfitState = new LockProfitState(this);
-        letProfitRunStockLimitUpState = new LetProfitRunStockLimitUpState(this, marketDataClient, cbStockMappingRepo);
+        letProfitRunStockLimitUpState = new LetProfitRunStockLimitUpState(this, marketDataClient, cbStockMappingRepo, vwap);
 
         state = normalState;
     }
