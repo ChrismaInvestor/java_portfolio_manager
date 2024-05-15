@@ -31,16 +31,18 @@ public class PriceServiceImpl implements PriceService {
     }
 
     @Override
-    public Map<String, BigDecimal> getVWAPCodePriceMap(List<String> codes) {
+//    public Map<String, BigDecimal> getVWAPCodePriceMap(List<String> codes) {
+    public Map<String, List<Price>> getVWAPCodePriceMap(List<String> codes) {
         var minPrices = marketDataClient.listMinPrice(codes);
-        Map<String, List<Price>> map = minPrices.stream().collect(Collectors.groupingBy(Price::getCode));
-        Map<String, BigDecimal> ans = new HashMap<>();
-        map.forEach((k,v )->{
-            long volume = v.stream().mapToLong(Price::getVolume).sum();
-            Double amount = v.stream().mapToDouble(Price::getAmount).sum();
-            ans.put(k, Util.priceMovementDivide(amount, (double) volume));
-        });
-        return ans;
+//        Map<String, List<Price>> map = minPrices.stream().collect(Collectors.groupingBy(Price::getCode));
+        return minPrices.stream().collect(Collectors.groupingBy(Price::getCode));
+//        Map<String, BigDecimal> ans = new HashMap<>();
+//        map.forEach((k,v )->{
+//            long volume = v.stream().mapToLong(Price::getVolume).sum();
+//            Double amount = v.stream().mapToDouble(Price::getAmount).sum();
+//            ans.put(k, Util.priceMovementDivide(amount, (double) volume));
+//        });
+//        return ans;
     }
 
 }
