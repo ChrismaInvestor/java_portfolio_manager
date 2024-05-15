@@ -240,9 +240,9 @@ public class TradeTask {
 
     @Scheduled(fixedDelay = 60000L)
     public void updateVWAP() {
-//        if (!isTradeTime()) {
-//            return;
-//        }
+        if (!isTradeTime()) {
+            return;
+        }
         vwap.update();
     }
 
