@@ -45,12 +45,14 @@ public class VWAP {
         Map<String, List<Price>> map = priceService.getVWAPCodePriceMap(codes.stream().toList());
         Map<String, BigDecimal> codeVWAPMap = new HashMap<>();
         Map<String, BigDecimal> codeMaxMinuteVWAPPrice = new HashMap<>();
-        map.forEach((k,v )->{
+        map.forEach((k, v) -> {
             BigDecimal maxMinuteVWAPPrice = BigDecimal.ZERO;
-            for(Price price : v){
-                BigDecimal minuteVWAPPrice = Util.priceMovementDivide(price.getAmount(), (double)price.getVolume());
-                if (minuteVWAPPrice.compareTo(maxMinuteVWAPPrice) > 0){
-                    maxMinuteVWAPPrice = minuteVWAPPrice;
+            for (Price price : v) {
+                if (price.getVolume() > 0) {
+                    BigDecimal minuteVWAPPrice = Util.priceMovementDivide(price.getAmount(), (double) price.getVolume());
+                    if (minuteVWAPPrice.compareTo(maxMinuteVWAPPrice) > 0) {
+                        maxMinuteVWAPPrice = minuteVWAPPrice;
+                    }
                 }
             }
             codeMaxMinuteVWAPPrice.put(k, maxMinuteVWAPPrice);
@@ -69,8 +71,8 @@ public class VWAP {
         return null;
     }
 
-    public BigDecimal getMaxMinuteVWAPPrice(String code){
-        if (codeMaxMinuteVWAPPrice.containsKey(code)){
+    public BigDecimal getMaxMinuteVWAPPrice(String code) {
+        if (codeMaxMinuteVWAPPrice.containsKey(code)) {
             return codeMaxMinuteVWAPPrice.get(code);
         }
         return null;
