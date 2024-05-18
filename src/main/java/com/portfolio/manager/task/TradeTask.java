@@ -198,9 +198,6 @@ public class TradeTask {
             if (!codes.isEmpty()) {
                 marketDataClient.getBidAsk(codes).forEach(
                         bidAskBrokerDTO -> {
-//                            if (BigDecimal.valueOf(bidAskBrokerDTO.bidPrice1()).divide(BigDecimal.valueOf(bidAskBrokerDTO.lastClose()), 4, RoundingMode.HALF_EVEN).compareTo(Constant.CROWN_TAKE_PROFIT) >= 0 ||
-//                                    BigDecimal.valueOf(bidAskBrokerDTO.high()).divide(BigDecimal.valueOf(bidAskBrokerDTO.lastClose()), 4, RoundingMode.HALF_EVEN).compareTo(Constant.CROWN_TAKE_PROFIT) >= 0 ||
-//                                    BigDecimal.valueOf(bidAskBrokerDTO.askPrice1()).divide(BigDecimal.valueOf(bidAskBrokerDTO.lastClose()), 4, RoundingMode.HALF_EVEN).compareTo(TradeTask.getStopLossBar()) <= 0) {
                             if (this.isSellable(bidAskBrokerDTO)) {
                                 positionBookForCrownRepo.findByPortfolioNameAndSecurityCode(portfolio.getName(), bidAskBrokerDTO.securityCode()).ifPresentOrElse(
                                         book -> {
@@ -240,9 +237,9 @@ public class TradeTask {
 
     @Scheduled(fixedDelay = 60000L)
     public void updateVWAP() {
-//        if (!isTradeTime()) {
-//            return;
-//        }
+        if (!isTradeTime()) {
+            return;
+        }
         vwap.update();
     }
 
@@ -279,7 +276,7 @@ public class TradeTask {
         return new BigDecimal("0.985");
     }
 
-    public boolean isSlump(BidAskBrokerDTO bidAskBrokerDTO){
+    public boolean isSlump(BidAskBrokerDTO bidAskBrokerDTO) {
         if (cbSellStrategyMapping.containsKey(bidAskBrokerDTO.securityCode())) {
             var strategy = cbSellStrategyMapping.get(bidAskBrokerDTO.securityCode());
             strategy.isSlump(bidAskBrokerDTO);

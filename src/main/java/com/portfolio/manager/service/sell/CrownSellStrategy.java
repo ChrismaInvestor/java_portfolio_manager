@@ -15,9 +15,9 @@ public class CrownSellStrategy {
 
     public CrownSellStrategy(MarketDataClient marketDataClient, CbStockMappingRepo cbStockMappingRepo, VWAP vwap) {
         letProfitRunState = new LetProfitRunState(this, marketDataClient, cbStockMappingRepo, vwap);
-        normalState = new NormalState(this);
+        normalState = new NormalState(this, vwap);
         stopLossState = new StopLossState(this);
-        lockProfitState = new LockProfitState(this);
+        lockProfitState = new LockProfitState(this, vwap);
         letProfitRunStockLimitUpState = new LetProfitRunStockLimitUpState(this, marketDataClient, cbStockMappingRepo, vwap);
 
         state = normalState;

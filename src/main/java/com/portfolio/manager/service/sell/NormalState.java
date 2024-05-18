@@ -5,19 +5,25 @@ import com.portfolio.manager.dto.BidAskBrokerDTO;
 import com.portfolio.manager.task.TradeTask;
 import com.portfolio.manager.util.Util;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 public class NormalState extends State {
     CrownSellStrategy crownSellStrategy;
+    VWAP vwap;
 
-    public NormalState(CrownSellStrategy crownSellStrategy) {
+    public NormalState(CrownSellStrategy crownSellStrategy, VWAP vwap) {
         this.crownSellStrategy = crownSellStrategy;
+        this.vwap = vwap;
     }
 
     @Override
     public void updateState(BidAskBrokerDTO bidAskBrokerDTO) {
         super.updateBid1PricesSlidingWindow(bidAskBrokerDTO);
+        if (!vwap.containsCode(bidAskBrokerDTO.securityCode()) && Util.priceMovementDivide(bidAskBrokerDTO.high(), bidAskBrokerDTO.lastClose()).compareTo(Constant.CROWN_LOCK_PROFIT) >= 0) {
+            vwap.addCode(bidAskBrokerDTO.securityCode());
+        }
 
         if (Util.priceMovementDivide(bidAskBrokerDTO.bidPrice1(), bidAskBrokerDTO.lastClose()).compareTo(Constant.CROWN_TAKE_PROFIT) >= 0 ||
                 Util.priceMovementDivide(bidAskBrokerDTO.high(), bidAskBrokerDTO.lastClose()).compareTo(Constant.CROWN_TAKE_PROFIT) >= 0) {
@@ -26,8 +32,13 @@ public class NormalState extends State {
         }
 
         if (this.isLockProfitTime()) {
-            if (Util.priceMovementDivide(bidAskBrokerDTO.bidPrice1(), bidAskBrokerDTO.lastClose()).compareTo(Constant.CROWN_LOCK_PROFIT) >= 0 ||
-                    Util.priceMovementDivide(bidAskBrokerDTO.high(), bidAskBrokerDTO.lastClose()).compareTo(Constant.CROWN_LOCK_PROFIT) >= 0) {
+            if (Util.priceMovementDivide(bidAskBrokerDTO.bidPrice1(), bidAskBrokerDTO.lastClose()).compareTo(Constant.CROWN_LOCK_PROFIT) >= 0){
+                crownSellStrategy.setState(crownSellStrategy.lockProfitState);
+                return;
+            }
+
+            BigDecimal maxMinuteVWAPPrice = vwap.getMaxMinuteVWAPPrice(bidAskBrokerDTO.securityCode());
+            if (maxMinuteVWAPPrice !=null && Util.priceMovementDivide(maxMinuteVWAPPrice.doubleValue(), bidAskBrokerDTO.lastClose()).compareTo(Constant.CROWN_LOCK_PROFIT) >= 0) {
                 crownSellStrategy.setState(crownSellStrategy.lockProfitState);
                 return;
             }
