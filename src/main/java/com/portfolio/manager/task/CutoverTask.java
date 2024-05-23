@@ -66,7 +66,7 @@ public class CutoverTask {
             List<PositionBookForCrown> positionBookForCrownList = positionBookForCrownRepo.findByPortfolioName(portfolio.getName());
             positionBookForCrownList.forEach(positionBookForCrown -> {
                 positionBookForCrown.setSellLock(false);
-                positionBookForCrown.setBuyLock(false);
+//                positionBookForCrown.setBuyLock(false);
             });
             positionBookForCrownRepo.saveAll(positionBookForCrownList);
 

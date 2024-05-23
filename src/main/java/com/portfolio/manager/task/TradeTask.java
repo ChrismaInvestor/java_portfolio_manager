@@ -11,7 +11,6 @@ import com.portfolio.manager.notification.Notification;
 import com.portfolio.manager.repository.*;
 import com.portfolio.manager.service.OrderService;
 import com.portfolio.manager.service.PortfolioService;
-import com.portfolio.manager.service.PositionSnapshotService;
 import com.portfolio.manager.service.sell.CrownSellStrategy;
 import com.portfolio.manager.service.sell.VWAP;
 import com.portfolio.manager.util.Util;
@@ -62,8 +61,8 @@ public class TradeTask {
     @Resource
     PositionBookForCrownRepo positionBookForCrownRepo;
 
-    @Resource
-    PositionSnapshotService positionSnapshotService;
+//    @Resource
+//    PositionSnapshotService positionSnapshotService;
 
     @Resource
     CbStockMappingRepo cbStockMappingRepo;
@@ -97,14 +96,14 @@ public class TradeTask {
                     if (!subOrders.isEmpty()) {
                         subOrders.stream().parallel().forEach(subOrder -> {
                             if (order.getBuyOrSell().equals(Direction.买入)) {
-                                positionBookForCrownRepo.findByPortfolioNameAndSecurityCode(portfolioDTO.name(), order.getSecurityCode()).ifPresent(positionBook -> {
-                                    if (!positionBook.getBuyLock()) {
+//                                positionBookForCrownRepo.findByPortfolioNameAndSecurityCode(portfolioDTO.name(), order.getSecurityCode()).ifPresent(positionBook -> {
+//                                    if (!positionBook.getBuyLock()) {
                                         orderService.execute(subOrder, order.getId(), bidAsks.get(order.getSecurityCode()).askPrice1(),
                                                 Math.min(subOrder.getRemainingShare().intValue(), bidAsks.get(order.getSecurityCode()).askVol1()));
-                                    } else {
-                                        log.info("Buy lock");
-                                    }
-                                });
+//                                    } else {
+//                                        log.info("Buy lock");
+//                                    }
+//                                });
                             } else if (order.getBuyOrSell().equals(Direction.卖出)) {
                                 orderService.execute(subOrder, order.getId(), bidAsks.get(order.getSecurityCode()).bidPrice1(), Math.min(subOrder.getRemainingShare().intValue(), bidAsks.get(order.getSecurityCode()).bidVol1()));
                             }
@@ -148,19 +147,11 @@ public class TradeTask {
         portfolioService.listPortfolio().stream().filter(Portfolio::getTakeProfitStopLoss
         ).toList().forEach(portfolio -> {
             // Unlock all buy orders
-            List<PositionBookForCrown> positionBookForCrownList = positionBookForCrownRepo.findByPortfolioName(portfolio.getName());
-            positionBookForCrownList.forEach(positionBookForCrown -> positionBookForCrown.setBuyLock(false));
-            positionBookForCrownRepo.saveAll(positionBookForCrownList);
+//            List<PositionBookForCrown> positionBookForCrownList = positionBookForCrownRepo.findByPortfolioName(portfolio.getName());
+//            positionBookForCrownList.forEach(positionBookForCrown -> positionBookForCrown.setBuyLock(false));
+//            positionBookForCrownRepo.saveAll(positionBookForCrownList);
 
             List<Position> positions = portfolioService.listPosition(portfolio.getName());
-            if (positions.isEmpty()) {
-                positionSnapshotService.get().forEach(positionSnapshot -> {
-                    OrderDTO orderDTO = new OrderDTO(Direction.买入, positionSnapshot.getSecurityShare(), "", positionSnapshot.getSecurityCode(), 0.0d);
-                    orderService.addOrder(orderDTO, portfolio, LocalDateTime.now(), LocalDateTime.now().plusMinutes(6L));
-                    wechatPublicAccount.send("Portfolio Buy back", positionSnapshot.getSecurityCode());
-                });
-                return;
-            }
 
             Map<String, Position> positionMap = positions.stream().collect(Collectors.toMap(Position::getSecurityCode, Function.identity()));
             positionBookForCrownRepo.findByPortfolioName(portfolio.getName()).stream().filter(PositionBookForCrown::getBuyBack).parallel().forEach(positionBookForCrown -> {
@@ -207,7 +198,7 @@ public class TradeTask {
                                                     log.warn("BidAsk hit: {}", bidAskBrokerDTO);
                                                     orderService.addOrder(order, portfolio, LocalDateTime.now(), LocalDateTime.now().plusMinutes(1L));
                                                     book.setSellLock(true);
-                                                    book.setBuyLock(true);
+//                                                    book.setBuyLock(true);
                                                     positionBookForCrownRepo.save(book);
                                                     wechatPublicAccount.send("Stop hit", bidAskBrokerDTO.toString());
                                                 });
@@ -308,7 +299,7 @@ public class TradeTask {
                 sellLockSet.add(order.securityCode());
                 positionBookForCrownRepo.findByPortfolioNameAndSecurityCode(portfolio.getName(), order.securityCode()).ifPresent(book -> {
                     book.setSellLock(true);
-                    book.setBuyLock(true);
+//                    book.setBuyLock(true);
                     positionBookForCrownRepo.save(book);
                 });
             }
