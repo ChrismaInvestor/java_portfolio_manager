@@ -62,6 +62,7 @@ public class VWAP {
         });
         this.codeVWAPMap = codeVWAPMap;
         this.codeMaxMinuteVWAPPrice = codeMaxMinuteVWAPPrice;
+        log.info("code max minute vwap price: {}", codeMaxMinuteVWAPPrice);
     }
 
     public BigDecimal getPrice(String code) {

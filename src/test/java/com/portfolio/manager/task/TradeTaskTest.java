@@ -52,8 +52,7 @@ public class TradeTaskTest {
 
 
 //        var codes = List.of("118019","113615", "123106", "113516", "113534", "128042");
-        var codes = List.of("118019","123205");
-        vwap.addCode("118019");
+        var codes = List.of("123118","123106");
         log.info("account info: {}", orderPlacementClient.queryAcct());
         Map<String, CrownSellStrategy> cbSellStrategyMapping = new ConcurrentHashMap<>();
         for (int i = 0; i < 3; i++) {
@@ -62,6 +61,7 @@ public class TradeTaskTest {
                         log.info("is sellable: {}", tradeTask.isSellable(bidAskBrokerDTO));
                         tradeTask.updateVWAP();
                         tradeTask.isSlump(bidAskBrokerDTO);
+
 //                    log.info("price: {}", bidAskBrokerDTO);
 //                    if (cbSellStrategyMapping.containsKey(bidAskBrokerDTO.securityCode())) {
 //                        var strategy = cbSellStrategyMapping.get(bidAskBrokerDTO.securityCode());

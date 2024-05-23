@@ -66,7 +66,6 @@ public class LetProfitRunState extends State {
             }
         }
 
-
     }
 
     @Override
@@ -76,6 +75,6 @@ public class LetProfitRunState extends State {
 
     private boolean isLetProfitRunTime() {
         LocalTime now = LocalDateTime.now().toLocalTime();
-        return now.isAfter(LocalTime.of(10, 0, 30));
+        return now.isAfter(LocalTime.of(9, 45, 30));
     }
 }

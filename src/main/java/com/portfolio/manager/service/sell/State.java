@@ -22,7 +22,7 @@ public abstract class State {
         }
         var max = this.findMax(bid1PricesSlidingWindow);
 //        var min = this.findMin(bid1PricesSlidingWindow);
-        log.info("max: {}", max);
+//        log.info("max: {}", max);
         return false;
 //        return Util.priceMovementDivide(max.subtract(min).doubleValue(), bidAskBrokerDTO.lastClose()).compareTo(Constant.CROWN_MAX_DRAW_DOWN) <= 0;
     }

@@ -98,8 +98,8 @@ public class TradeTask {
                             if (order.getBuyOrSell().equals(Direction.买入)) {
 //                                positionBookForCrownRepo.findByPortfolioNameAndSecurityCode(portfolioDTO.name(), order.getSecurityCode()).ifPresent(positionBook -> {
 //                                    if (!positionBook.getBuyLock()) {
-                                        orderService.execute(subOrder, order.getId(), bidAsks.get(order.getSecurityCode()).askPrice1(),
-                                                Math.min(subOrder.getRemainingShare().intValue(), bidAsks.get(order.getSecurityCode()).askVol1()));
+                                orderService.execute(subOrder, order.getId(), bidAsks.get(order.getSecurityCode()).askPrice1(),
+                                        Math.min(subOrder.getRemainingShare().intValue(), bidAsks.get(order.getSecurityCode()).askVol1()));
 //                                    } else {
 //                                        log.info("Buy lock");
 //                                    }
@@ -152,7 +152,6 @@ public class TradeTask {
 //            positionBookForCrownRepo.saveAll(positionBookForCrownList);
 
             List<Position> positions = portfolioService.listPosition(portfolio.getName());
-
             Map<String, Position> positionMap = positions.stream().collect(Collectors.toMap(Position::getSecurityCode, Function.identity()));
             positionBookForCrownRepo.findByPortfolioName(portfolio.getName()).stream().filter(PositionBookForCrown::getBuyBack).parallel().forEach(positionBookForCrown -> {
                 var currentPosition = positionMap.get(positionBookForCrown.getSecurityCode());
