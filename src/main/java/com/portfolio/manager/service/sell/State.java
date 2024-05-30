@@ -17,22 +17,19 @@ public abstract class State {
     abstract boolean isSellable();
 
     boolean isSlump(BidAskBrokerDTO bidAskBrokerDTO) {
-        if (bid1PricesSlidingWindow.isEmpty()){
+        if (bid1PricesSlidingWindow.isEmpty()) {
             return false;
         }
         var max = this.findMax(bid1PricesSlidingWindow);
-//        var min = this.findMin(bid1PricesSlidingWindow);
-//        log.info("max: {}", max);
+        var min = this.findMin(bid1PricesSlidingWindow, max);
+        log.info("max: {}, min : {}", max, min);
         return false;
 //        return Util.priceMovementDivide(max.subtract(min).doubleValue(), bidAskBrokerDTO.lastClose()).compareTo(Constant.CROWN_MAX_DRAW_DOWN) <= 0;
     }
 
-    void updateBid1PricesSlidingWindow(BidAskBrokerDTO bidAskBrokerDTO){
-//        while (!bid1PricesSlidingWindow.isEmpty() && BigDecimal.valueOf(bidAskBrokerDTO.bidPrice1()).compareTo(bid1PricesSlidingWindow.peekLast()) >= 0) {
-//            bid1PricesSlidingWindow.pollLast();
-//        }
+    void updateBid1PricesSlidingWindow(BidAskBrokerDTO bidAskBrokerDTO) {
         this.bid1PricesSlidingWindow.offer(BigDecimal.valueOf(bidAskBrokerDTO.bidPrice1()));
-        while (bid1PricesSlidingWindow.size() > Constant.SLUMP_MAX_SECONDS){
+        while (bid1PricesSlidingWindow.size() > Constant.SLUMP_MAX_SECONDS) {
             bid1PricesSlidingWindow.poll();
         }
     }
@@ -44,7 +41,7 @@ public abstract class State {
     private BigDecimal findMax(ConcurrentLinkedDeque<BigDecimal> deque) {
         Iterator<BigDecimal> iterator = deque.descendingIterator();
         BigDecimal max = deque.peekFirst();
-        if (deque.size() == 1){
+        if (deque.size() == 1) {
             return max;
         }
         while (iterator.hasNext()) {
@@ -58,15 +55,18 @@ public abstract class State {
 
     private BigDecimal findMin(ConcurrentLinkedDeque<BigDecimal> deque, BigDecimal max) {
         BigDecimal min = max;
-        if (deque.size() == 1){
-            return max;
+        if (deque.size() == 1) {
+            return min;
         }
 
         Iterator<BigDecimal> iterator = deque.descendingIterator();
         boolean start = false;
         while (iterator.hasNext()) {
             BigDecimal value = iterator.next();
-            if (value.compareTo(min) < 0) {
+            if (value.compareTo(max) == 0) {
+                start = true;
+            }
+            if (start && value.compareTo(min) < 0) {
                 min = value;
             }
         }
