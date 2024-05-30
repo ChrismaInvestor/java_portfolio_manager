@@ -5,6 +5,9 @@ import com.portfolio.manager.dto.BidAskBrokerDTO;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
@@ -28,6 +31,10 @@ public abstract class State {
     }
 
     void updateBid1PricesSlidingWindow(BidAskBrokerDTO bidAskBrokerDTO) {
+        if (bid1PricesSlidingWindow.isEmpty() && BigDecimal.valueOf(bidAskBrokerDTO.high()).compareTo(BigDecimal.valueOf(bidAskBrokerDTO.bidPrice1())) > 0) {
+            this.bid1PricesSlidingWindow.offer(BigDecimal.valueOf(bidAskBrokerDTO.high()));
+        }
+
         this.bid1PricesSlidingWindow.offer(BigDecimal.valueOf(bidAskBrokerDTO.bidPrice1()));
         while (bid1PricesSlidingWindow.size() > Constant.SLUMP_MAX_SECONDS) {
             bid1PricesSlidingWindow.poll();
