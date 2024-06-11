@@ -316,9 +316,7 @@ public class TradeTask {
 
     private void handleStopLoss(List<Position> selectedPositions, Portfolio portfolio, String notificationTitle) {
         List<OrderDTO> orders = orderService.sell(selectedPositions);
-        orders.forEach(order -> {
-            this.placeOrder(order, portfolio, notificationTitle);
-        });
+        orders.forEach(order -> this.placeOrder(order, portfolio, notificationTitle));
     }
 
     private void placeOrder(OrderDTO order, Portfolio portfolio, String notificationTitle) {
