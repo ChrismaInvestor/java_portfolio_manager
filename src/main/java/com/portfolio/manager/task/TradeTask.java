@@ -207,6 +207,9 @@ public class TradeTask {
                                             this.handleStopLoss(selectedPositions, portfolio, "Stop hit");
                                         });
                             }
+                            if (this.isSlump(bidAskBrokerDTO)) {
+                                log.info("slump hit");
+                            }
                         }
                 );
                 // 2nd tier stop loss check
@@ -269,8 +272,7 @@ public class TradeTask {
     public boolean isSlump(BidAskBrokerDTO bidAskBrokerDTO) {
         if (cbSellStrategyMapping.containsKey(bidAskBrokerDTO.securityCode())) {
             var strategy = cbSellStrategyMapping.get(bidAskBrokerDTO.securityCode());
-            strategy.isSlump(bidAskBrokerDTO);
-        } else {
+            return strategy.isSlump(bidAskBrokerDTO);
         }
         return false;
     }
@@ -289,20 +291,47 @@ public class TradeTask {
         return cbSellStrategyMapping.get(bidAskBrokerDTO.securityCode()).isSellable();
     }
 
+    private void handleStopLossMultiTier(Position position, PositionSnapshot positionSnapshot, Portfolio portfolio, String notificationTitle) {
+        BigDecimal tier1 = new BigDecimal("0.75");
+        BigDecimal tier2 = new BigDecimal("0.5");
+        BigDecimal tier3 = new BigDecimal("0.25");
+        if (BigDecimal.valueOf(position.getSecurityShare()).compareTo(BigDecimal.valueOf(positionSnapshot.getSecurityShare()).multiply(tier1)) > 0) {
+            OrderDTO order = orderService.sell(position, 0.25d);
+            this.placeOrder(order, portfolio, notificationTitle);
+            return;
+        }
+        if (BigDecimal.valueOf(position.getSecurityShare()).compareTo(BigDecimal.valueOf(positionSnapshot.getSecurityShare()).multiply(tier2)) > 0) {
+            OrderDTO order = orderService.sell(position, 0.33d);
+            this.placeOrder(order, portfolio, notificationTitle);
+            return;
+        }
+        if (BigDecimal.valueOf(position.getSecurityShare()).compareTo(BigDecimal.valueOf(positionSnapshot.getSecurityShare()).multiply(tier3)) > 0) {
+            OrderDTO order = orderService.sell(position, 0.5d);
+            this.placeOrder(order, portfolio, notificationTitle);
+            return;
+        }
+        OrderDTO order = orderService.sell(position);
+        this.placeOrder(order, portfolio, notificationTitle);
+    }
+
     private void handleStopLoss(List<Position> selectedPositions, Portfolio portfolio, String notificationTitle) {
         List<OrderDTO> orders = orderService.sell(selectedPositions);
         orders.forEach(order -> {
-            if (!sellLockSet.contains(order.securityCode())) {
-                orderService.addOrder(order, portfolio, LocalDateTime.now(), LocalDateTime.now().plusMinutes(1L));
-                wechatPublicAccount.send(notificationTitle, order.toString());
-                sellLockSet.add(order.securityCode());
-                positionBookForCrownRepo.findByPortfolioNameAndSecurityCode(portfolio.getName(), order.securityCode()).ifPresent(book -> {
-                    book.setSellLock(true);
-//                    book.setBuyLock(true);
-                    positionBookForCrownRepo.save(book);
-                });
-            }
+            this.placeOrder(order, portfolio, notificationTitle);
         });
+    }
+
+    private void placeOrder(OrderDTO order, Portfolio portfolio, String notificationTitle) {
+        if (!sellLockSet.contains(order.securityCode())) {
+            orderService.addOrder(order, portfolio, LocalDateTime.now(), LocalDateTime.now().plusMinutes(1L));
+            wechatPublicAccount.send(notificationTitle, order.toString());
+            sellLockSet.add(order.securityCode());
+            positionBookForCrownRepo.findByPortfolioNameAndSecurityCode(portfolio.getName(), order.securityCode()).ifPresent(book -> {
+                book.setSellLock(true);
+//                    book.setBuyLock(true);
+                positionBookForCrownRepo.save(book);
+            });
+        }
     }
 
 }

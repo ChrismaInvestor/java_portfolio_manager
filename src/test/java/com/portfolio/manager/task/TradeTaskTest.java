@@ -52,25 +52,25 @@ public class TradeTaskTest {
 
 
 //        var codes = List.of("118019","113615", "123106", "113516", "113534", "128042");
-        var codes = List.of("123118","123106");
+        var codes = List.of("123118","123106","128042");
         log.info("account info: {}", orderPlacementClient.queryAcct());
         Map<String, CrownSellStrategy> cbSellStrategyMapping = new ConcurrentHashMap<>();
         for (int i = 0; i < 3; i++) {
             marketDataClient.getBidAsk(codes).forEach(
                     bidAskBrokerDTO -> {
                         log.info("is sellable: {}", tradeTask.isSellable(bidAskBrokerDTO));
+                        log.info("is slump: {}", tradeTask.isSlump(bidAskBrokerDTO));
                         tradeTask.updateVWAP();
-                        tradeTask.isSlump(bidAskBrokerDTO);
 
 //                    log.info("price: {}", bidAskBrokerDTO);
-//                    if (cbSellStrategyMapping.containsKey(bidAskBrokerDTO.securityCode())) {
-//                        var strategy = cbSellStrategyMapping.get(bidAskBrokerDTO.securityCode());
-//                        strategy.updateState(bidAskBrokerDTO);
-//                    } else {
-//                        CrownSellStrategy strategy = new CrownSellStrategy(marketDataClient, cbStockMappingRepo);
-//                        strategy.updateState(bidAskBrokerDTO);
-//                        cbSellStrategyMapping.put(bidAskBrokerDTO.securityCode(), strategy);
-//                    }
+                    if (cbSellStrategyMapping.containsKey(bidAskBrokerDTO.securityCode())) {
+                        var strategy = cbSellStrategyMapping.get(bidAskBrokerDTO.securityCode());
+                        strategy.updateState(bidAskBrokerDTO);
+                    } else {
+                        CrownSellStrategy strategy = new CrownSellStrategy(marketDataClient, cbStockMappingRepo, vwap);
+                        strategy.updateState(bidAskBrokerDTO);
+                        cbSellStrategyMapping.put(bidAskBrokerDTO.securityCode(), strategy);
+                    }
 //                    log.info("strategy map: {}", cbSellStrategyMapping.get(bidAskBrokerDTO.securityCode()));
                     });
         }

@@ -22,6 +22,10 @@ public interface OrderService {
     //Estimation
     List<OrderDTO> sell(List<Position> toSell);
 
+    OrderDTO sell(Position toSell);
+
+    OrderDTO sell(Position toSell, double ratio);
+
     void addOrder(OrderDTO orderDTO, Portfolio portfolio, LocalDateTime startTime, LocalDateTime endTime);
 
     List<OrderInProgressDTO> listOrdersInProgress(String portfolio);

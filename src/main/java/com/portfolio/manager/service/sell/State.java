@@ -2,12 +2,10 @@ package com.portfolio.manager.service.sell;
 
 import com.portfolio.manager.constant.Constant;
 import com.portfolio.manager.dto.BidAskBrokerDTO;
+import com.portfolio.manager.util.Util;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
@@ -25,9 +23,8 @@ public abstract class State {
         }
         var max = this.findMax(bid1PricesSlidingWindow);
         var min = this.findMin(bid1PricesSlidingWindow, max);
-        log.info("max: {}, min : {}", max, min);
-        return false;
-//        return Util.priceMovementDivide(max.subtract(min).doubleValue(), bidAskBrokerDTO.lastClose()).compareTo(Constant.CROWN_MAX_DRAW_DOWN) <= 0;
+        log.info("max: {}, min : {}, size: {}", max, min, bid1PricesSlidingWindow.size());
+        return Util.priceMovementDivide(max.subtract(min).doubleValue(), bidAskBrokerDTO.lastClose()).compareTo(Constant.CROWN_MAX_DRAW_DOWN) <= 0;
     }
 
     void updateBid1PricesSlidingWindow(BidAskBrokerDTO bidAskBrokerDTO) {

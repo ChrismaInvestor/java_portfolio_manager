@@ -8,6 +8,7 @@ import com.portfolio.manager.integration.OrderPlacementClient;
 import com.portfolio.manager.repository.OrderRepo;
 import com.portfolio.manager.repository.SubOrderRepo;
 import com.portfolio.manager.repository.TradeRepo;
+import com.portfolio.manager.util.Util;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -108,13 +109,25 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public List<OrderDTO> sell(List<Position> toSell) {
-        return toSell.stream().map(position -> {
-            try {
-                return new OrderDTO(Direction.卖出, position.getSecurityShare(), securityService.getSecurityName(position.getSecurityCode()), position.getSecurityCode(), BigDecimal.valueOf(priceService.getLatestPrice(position.getSecurityCode())).multiply(BigDecimal.valueOf(position.getSecurityShare())).doubleValue());
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }).toList();
+        return toSell.stream().map(this::sell).toList();
+    }
+
+    @Override
+    public OrderDTO sell(Position position) {
+        try {
+            return new OrderDTO(Direction.卖出, position.getSecurityShare(), securityService.getSecurityName(position.getSecurityCode()), position.getSecurityCode(), BigDecimal.valueOf(priceService.getLatestPrice(position.getSecurityCode())).multiply(BigDecimal.valueOf(position.getSecurityShare())).doubleValue());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public OrderDTO sell(Position position, double ratio) {
+        try {
+            return new OrderDTO(Direction.卖出, Util.calVolume(position.getSecurityShare(),ratio,10L), securityService.getSecurityName(position.getSecurityCode()), position.getSecurityCode(), BigDecimal.valueOf(priceService.getLatestPrice(position.getSecurityCode())).multiply(BigDecimal.valueOf(position.getSecurityShare())).doubleValue());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
