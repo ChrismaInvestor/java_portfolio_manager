@@ -68,7 +68,9 @@ public class TradeTaskTest {
         Optional<Position> pos = positions.stream().filter(position -> position.getSecurityCode().equals("128106")).findFirst();
         if (posSnapShot.isPresent() && pos.isPresent()) {
             log.info("======new stop loss======");
-            tradeTask.handleStopLossMultiTier(pos.get(), posSnapShot.get(), portfolio, "Stop hit");
+            marketDataClient.getBidAsk(List.of("128106")).forEach(
+                    bidAskBrokerDTO -> tradeTask.handleStopLossMultiTier(pos.get(), posSnapShot.get(), portfolio, bidAskBrokerDTO,"Stop hit")
+            );
         }
 
 //        var codes = List.of("118019","113615", "123106", "113516", "113534", "128042");

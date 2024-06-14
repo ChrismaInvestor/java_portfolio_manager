@@ -11,6 +11,7 @@ public class Constant {
     public static final BigDecimal CROWN_TAKE_PROFIT = new BigDecimal("1.075");
 
     public static final BigDecimal CROWN_STOP_LOSS = new BigDecimal("0.975");
+    public static final BigDecimal CROWN_STOP_LOSS_NEW = new BigDecimal("0.9775");
 
     public static final BigDecimal CROWN_LOCK_PROFIT = new BigDecimal("1.035");
 

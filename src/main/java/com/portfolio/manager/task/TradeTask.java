@@ -197,7 +197,7 @@ public class TradeTask {
                                                 Optional<Position> pos = positions.stream().filter(position -> position.getSecurityCode().equals(bidAskBrokerDTO.securityCode())).findFirst();
                                                 if (posSnapShot.isPresent() && pos.isPresent()) {
                                                     log.info("======new stop loss======");
-                                                    this.handleStopLossMultiTier(pos.get(), posSnapShot.get(), portfolio, "Stop hit");
+                                                    this.handleStopLossMultiTier(pos.get(), posSnapShot.get(), portfolio, bidAskBrokerDTO,"Stop hit");
                                                 } else {
                                                     List<OrderDTO> orders = orderService.sell(positions.stream().filter(position -> position.getSecurityCode().equals(bidAskBrokerDTO.securityCode())).toList());
                                                     orders.forEach(order -> {
@@ -262,11 +262,12 @@ public class TradeTask {
     }
 
     public static BigDecimal getStopLossBar() {
-        LocalTime now = LocalDateTime.now().toLocalTime();
-        if (!now.isBefore(LocalTime.of(9, 30, 30)) && !now.isAfter(LocalTime.of(10, 30, 30))) {
-            return new BigDecimal("0.97");
-        }
-        return Constant.CROWN_STOP_LOSS;
+//        LocalTime now = LocalDateTime.now().toLocalTime();
+//        if (!now.isBefore(LocalTime.of(9, 30, 30)) && !now.isAfter(LocalTime.of(10, 30, 30))) {
+//            return new BigDecimal("0.97");
+//        }
+//        return Constant.CROWN_STOP_LOSS;
+        return Constant.CROWN_STOP_LOSS_NEW;
     }
 
     public static BigDecimal getWholePortfolioStopLossBar() {
@@ -299,27 +300,35 @@ public class TradeTask {
         return cbSellStrategyMapping.get(bidAskBrokerDTO.securityCode()).isSellable();
     }
 
-    public void handleStopLossMultiTier(Position position, PositionSnapshot positionSnapshot, Portfolio portfolio, String notificationTitle) {
+    public void handleStopLossMultiTier(Position position, PositionSnapshot positionSnapshot, Portfolio portfolio, BidAskBrokerDTO bidAskBrokerDTO, String notificationTitle) {
         BigDecimal tier1 = new BigDecimal("0.75");
         BigDecimal tier2 = new BigDecimal("0.5");
         BigDecimal tier3 = new BigDecimal("0.25");
-        if (BigDecimal.valueOf(position.getSecurityShare()).compareTo(BigDecimal.valueOf(positionSnapshot.getSecurityShare()).multiply(tier1)) > 0) {
+        BigDecimal priceTier2 = new BigDecimal("0.9725");
+        BigDecimal priceTier3 = new BigDecimal("0.9675");
+        BigDecimal priceTier4 = new BigDecimal("0.9625");
+        if (BigDecimal.valueOf(position.getSecurityShare()).compareTo(BigDecimal.valueOf(positionSnapshot.getSecurityShare()).multiply(tier1)) > 0
+        ) {
             OrderDTO order = orderService.sell(position, 0.25d);
             this.placeOrder(order, portfolio, notificationTitle);
             return;
         }
-        if (BigDecimal.valueOf(position.getSecurityShare()).compareTo(BigDecimal.valueOf(positionSnapshot.getSecurityShare()).multiply(tier2)) > 0) {
+        if (BigDecimal.valueOf(position.getSecurityShare()).compareTo(BigDecimal.valueOf(positionSnapshot.getSecurityShare()).multiply(tier2)) > 0
+                && Util.priceMovementDivide(bidAskBrokerDTO.askPrice1(), bidAskBrokerDTO.lastClose()).compareTo(priceTier2) <= 0) {
             OrderDTO order = orderService.sell(position, 0.33d);
             this.placeOrder(order, portfolio, notificationTitle);
             return;
         }
-        if (BigDecimal.valueOf(position.getSecurityShare()).compareTo(BigDecimal.valueOf(positionSnapshot.getSecurityShare()).multiply(tier3)) > 0) {
+        if (BigDecimal.valueOf(position.getSecurityShare()).compareTo(BigDecimal.valueOf(positionSnapshot.getSecurityShare()).multiply(tier3)) > 0
+                && Util.priceMovementDivide(bidAskBrokerDTO.askPrice1(), bidAskBrokerDTO.lastClose()).compareTo(priceTier3) <= 0) {
             OrderDTO order = orderService.sell(position, 0.5d);
             this.placeOrder(order, portfolio, notificationTitle);
             return;
         }
-        OrderDTO order = orderService.sell(position);
-        this.placeOrder(order, portfolio, notificationTitle);
+        if (Util.priceMovementDivide(bidAskBrokerDTO.askPrice1(), bidAskBrokerDTO.lastClose()).compareTo(priceTier4) <= 0) {
+            OrderDTO order = orderService.sell(position);
+            this.placeOrder(order, portfolio, notificationTitle);
+        }
     }
 
     private void handleStopLoss(List<Position> selectedPositions, Portfolio portfolio, String notificationTitle) {
