@@ -11,6 +11,7 @@ import com.portfolio.manager.notification.Notification;
 import com.portfolio.manager.repository.*;
 import com.portfolio.manager.service.OrderService;
 import com.portfolio.manager.service.PortfolioService;
+import com.portfolio.manager.service.PositionSnapshotService;
 import com.portfolio.manager.service.sell.CrownSellStrategy;
 import com.portfolio.manager.service.sell.VWAP;
 import com.portfolio.manager.util.Util;
@@ -61,8 +62,8 @@ public class TradeTask {
     @Resource
     PositionBookForCrownRepo positionBookForCrownRepo;
 
-//    @Resource
-//    PositionSnapshotService positionSnapshotService;
+    @Resource
+    PositionSnapshotService positionSnapshotService;
 
     @Resource
     CbStockMappingRepo cbStockMappingRepo;
@@ -192,15 +193,22 @@ public class TradeTask {
                                 positionBookForCrownRepo.findByPortfolioNameAndSecurityCode(portfolio.getName(), bidAskBrokerDTO.securityCode()).ifPresentOrElse(
                                         book -> {
                                             if (!book.getSellLock()) {
-                                                List<OrderDTO> orders = orderService.sell(positions.stream().filter(position -> position.getSecurityCode().equals(bidAskBrokerDTO.securityCode())).toList());
-                                                orders.forEach(order -> {
-                                                    log.warn("BidAsk hit: {}", bidAskBrokerDTO);
-                                                    orderService.addOrder(order, portfolio, LocalDateTime.now(), LocalDateTime.now().plusMinutes(1L));
-                                                    book.setSellLock(true);
+                                                Optional<PositionSnapshot> posSnapShot = positionSnapshotService.get().stream().filter(position -> position.getSecurityCode().equals(bidAskBrokerDTO.securityCode())).findFirst();
+                                                Optional<Position> pos = positions.stream().filter(position -> position.getSecurityCode().equals(bidAskBrokerDTO.securityCode())).findFirst();
+                                                if (posSnapShot.isPresent() && pos.isPresent()) {
+                                                    log.info("======new stop loss======");
+                                                    this.handleStopLossMultiTier(pos.get(), posSnapShot.get(), portfolio, "Stop hit");
+                                                } else {
+                                                    List<OrderDTO> orders = orderService.sell(positions.stream().filter(position -> position.getSecurityCode().equals(bidAskBrokerDTO.securityCode())).toList());
+                                                    orders.forEach(order -> {
+                                                        log.warn("BidAsk hit: {}", bidAskBrokerDTO);
+                                                        orderService.addOrder(order, portfolio, LocalDateTime.now(), LocalDateTime.now().plusMinutes(1L));
+                                                        book.setSellLock(true);
 //                                                    book.setBuyLock(true);
-                                                    positionBookForCrownRepo.save(book);
-                                                    wechatPublicAccount.send("Stop hit", bidAskBrokerDTO.toString());
-                                                });
+                                                        positionBookForCrownRepo.save(book);
+                                                        wechatPublicAccount.send("Stop hit", bidAskBrokerDTO.toString());
+                                                    });
+                                                }
                                             }
                                         }, () -> {
                                             List<Position> selectedPositions = positions.stream().filter(position -> position.getSecurityCode().equals(bidAskBrokerDTO.securityCode())).toList();
@@ -291,7 +299,7 @@ public class TradeTask {
         return cbSellStrategyMapping.get(bidAskBrokerDTO.securityCode()).isSellable();
     }
 
-    private void handleStopLossMultiTier(Position position, PositionSnapshot positionSnapshot, Portfolio portfolio, String notificationTitle) {
+    public void handleStopLossMultiTier(Position position, PositionSnapshot positionSnapshot, Portfolio portfolio, String notificationTitle) {
         BigDecimal tier1 = new BigDecimal("0.75");
         BigDecimal tier2 = new BigDecimal("0.5");
         BigDecimal tier3 = new BigDecimal("0.25");

@@ -1,10 +1,15 @@
 package com.portfolio.manager.task;
 
 import com.portfolio.manager.constant.Constant;
+import com.portfolio.manager.domain.Portfolio;
+import com.portfolio.manager.domain.Position;
+import com.portfolio.manager.domain.PositionSnapshot;
 import com.portfolio.manager.integration.MarketDataClient;
 import com.portfolio.manager.integration.OrderPlacementClient;
 import com.portfolio.manager.repository.CbStockMappingRepo;
 import com.portfolio.manager.service.OrderService;
+import com.portfolio.manager.service.PortfolioService;
+import com.portfolio.manager.service.PositionSnapshotService;
 import com.portfolio.manager.service.sell.CrownSellStrategy;
 import com.portfolio.manager.service.sell.VWAP;
 import jakarta.annotation.Resource;
@@ -16,6 +21,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
@@ -32,7 +38,13 @@ public class TradeTaskTest {
     OrderPlacementClient orderPlacementClient;
 
     @Resource
+    PortfolioService portfolioService;
+
+    @Resource
     OrderService orderService;
+
+    @Resource
+    PositionSnapshotService positionSnapshotService;
 
 
     @Resource
@@ -50,6 +62,14 @@ public class TradeTaskTest {
             log.info("The whole portfolio is reaching stop loss line");
         }
 
+        Portfolio portfolio = portfolioService.getPortfolio("皇冠");
+        List<Position> positions = portfolioService.listPosition("皇冠");
+        Optional<PositionSnapshot> posSnapShot = positionSnapshotService.get().stream().filter(position -> position.getSecurityCode().equals("128106")).findFirst();
+        Optional<Position> pos = positions.stream().filter(position -> position.getSecurityCode().equals("128106")).findFirst();
+        if (posSnapShot.isPresent() && pos.isPresent()) {
+            log.info("======new stop loss======");
+            tradeTask.handleStopLossMultiTier(pos.get(), posSnapShot.get(), portfolio, "Stop hit");
+        }
 
 //        var codes = List.of("118019","113615", "123106", "113516", "113534", "128042");
         var codes = List.of("123118","123106","128042");
