@@ -1,9 +1,6 @@
 package com.portfolio.manager.service;
 
-import com.portfolio.manager.domain.Order;
-import com.portfolio.manager.domain.Portfolio;
-import com.portfolio.manager.domain.Position;
-import com.portfolio.manager.domain.SubOrder;
+import com.portfolio.manager.domain.*;
 import com.portfolio.manager.dto.OrderDTO;
 import com.portfolio.manager.dto.OrderInProgressDTO;
 
@@ -24,7 +21,7 @@ public interface OrderService {
 
     OrderDTO sell(Position toSell);
 
-    OrderDTO sell(Position toSell, double ratio);
+    OrderDTO sell(Position toSell, PositionSnapshot positionSnapshot, double ratio);
 
     void addOrder(OrderDTO orderDTO, Portfolio portfolio, LocalDateTime startTime, LocalDateTime endTime);
 

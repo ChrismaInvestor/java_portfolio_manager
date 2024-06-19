@@ -197,7 +197,7 @@ public class TradeTask {
                                                 Optional<Position> pos = positions.stream().filter(position -> position.getSecurityCode().equals(bidAskBrokerDTO.securityCode())).findFirst();
                                                 if (posSnapShot.isPresent() && pos.isPresent()) {
                                                     log.info("======new stop loss======");
-                                                    this.handleStopLossMultiTier(pos.get(), posSnapShot.get(), portfolio, bidAskBrokerDTO,"Stop hit");
+                                                    this.handleStopLossMultiTier(pos.get(), posSnapShot.get(), portfolio, bidAskBrokerDTO, "Stop hit");
                                                 } else {
                                                     List<OrderDTO> orders = orderService.sell(positions.stream().filter(position -> position.getSecurityCode().equals(bidAskBrokerDTO.securityCode())).toList());
                                                     orders.forEach(order -> {
@@ -309,31 +309,49 @@ public class TradeTask {
         BigDecimal priceTier4 = new BigDecimal("0.9625");
         if (BigDecimal.valueOf(position.getSecurityShare()).compareTo(BigDecimal.valueOf(positionSnapshot.getSecurityShare()).multiply(tier1)) > 0
         ) {
-            OrderDTO order = orderService.sell(position, 0.25d);
-            this.placeOrder(order, portfolio, notificationTitle);
+            OrderDTO order = orderService.sell(position, positionSnapshot, tier1.doubleValue());
+            if (order.share() > 0) {
+                log.info("order: {}", order);
+                this.placeOrderWithoutMemoryLock(order, portfolio, notificationTitle);
+            }
             return;
         }
         if (BigDecimal.valueOf(position.getSecurityShare()).compareTo(BigDecimal.valueOf(positionSnapshot.getSecurityShare()).multiply(tier2)) > 0
                 && Util.priceMovementDivide(bidAskBrokerDTO.askPrice1(), bidAskBrokerDTO.lastClose()).compareTo(priceTier2) <= 0) {
-            OrderDTO order = orderService.sell(position, 0.33d);
-            this.placeOrder(order, portfolio, notificationTitle);
+            OrderDTO order = orderService.sell(position, positionSnapshot, tier2.doubleValue());
+            if (order.share() > 0) {
+                log.info("order: {}", order);
+                this.placeOrderWithoutMemoryLock(order, portfolio, notificationTitle);
+            }
             return;
         }
         if (BigDecimal.valueOf(position.getSecurityShare()).compareTo(BigDecimal.valueOf(positionSnapshot.getSecurityShare()).multiply(tier3)) > 0
                 && Util.priceMovementDivide(bidAskBrokerDTO.askPrice1(), bidAskBrokerDTO.lastClose()).compareTo(priceTier3) <= 0) {
-            OrderDTO order = orderService.sell(position, 0.5d);
-            this.placeOrder(order, portfolio, notificationTitle);
+            OrderDTO order = orderService.sell(position, positionSnapshot, tier3.doubleValue());
+            if (order.share() > 0) {
+                log.info("order: {}", order);
+                this.placeOrderWithoutMemoryLock(order, portfolio, notificationTitle);
+            }
             return;
         }
         if (Util.priceMovementDivide(bidAskBrokerDTO.askPrice1(), bidAskBrokerDTO.lastClose()).compareTo(priceTier4) <= 0) {
             OrderDTO order = orderService.sell(position);
-            this.placeOrder(order, portfolio, notificationTitle);
+            this.placeOrderWithoutMemoryLock(order, portfolio, notificationTitle);
         }
     }
 
     private void handleStopLoss(List<Position> selectedPositions, Portfolio portfolio, String notificationTitle) {
         List<OrderDTO> orders = orderService.sell(selectedPositions);
         orders.forEach(order -> this.placeOrder(order, portfolio, notificationTitle));
+    }
+
+    private void placeOrderWithoutMemoryLock(OrderDTO order, Portfolio portfolio, String notificationTitle) {
+            orderService.addOrder(order, portfolio, LocalDateTime.now(), LocalDateTime.now().plusMinutes(1L));
+            wechatPublicAccount.send(notificationTitle, order.toString());
+            positionBookForCrownRepo.findByPortfolioNameAndSecurityCode(portfolio.getName(), order.securityCode()).ifPresent(book -> {
+                book.setSellLock(true);
+                positionBookForCrownRepo.save(book);
+            });
     }
 
     private void placeOrder(OrderDTO order, Portfolio portfolio, String notificationTitle) {

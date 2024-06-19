@@ -64,11 +64,11 @@ public class TradeTaskTest {
 
         Portfolio portfolio = portfolioService.getPortfolio("皇冠");
         List<Position> positions = portfolioService.listPosition("皇冠");
-        Optional<PositionSnapshot> posSnapShot = positionSnapshotService.get().stream().filter(position -> position.getSecurityCode().equals("128106")).findFirst();
-        Optional<Position> pos = positions.stream().filter(position -> position.getSecurityCode().equals("128106")).findFirst();
+        Optional<PositionSnapshot> posSnapShot = positionSnapshotService.get().stream().filter(position -> position.getSecurityCode().equals("127007")).findFirst();
+        Optional<Position> pos = positions.stream().filter(position -> position.getSecurityCode().equals("127007")).findFirst();
         if (posSnapShot.isPresent() && pos.isPresent()) {
             log.info("======new stop loss======");
-            marketDataClient.getBidAsk(List.of("128106")).forEach(
+            marketDataClient.getBidAsk(List.of("127007")).forEach(
                     bidAskBrokerDTO -> tradeTask.handleStopLossMultiTier(pos.get(), posSnapShot.get(), portfolio, bidAskBrokerDTO,"Stop hit")
             );
         }

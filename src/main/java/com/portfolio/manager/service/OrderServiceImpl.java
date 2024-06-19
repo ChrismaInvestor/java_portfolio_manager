@@ -122,9 +122,9 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public OrderDTO sell(Position position, double ratio) {
+    public OrderDTO sell(Position position, PositionSnapshot positionSnapshot, double ratio) {
         try {
-            return new OrderDTO(Direction.卖出, Util.calVolume(position.getSecurityShare(),ratio,10L), securityService.getSecurityName(position.getSecurityCode()), position.getSecurityCode(), BigDecimal.valueOf(priceService.getLatestPrice(position.getSecurityCode())).multiply(BigDecimal.valueOf(position.getSecurityShare())).doubleValue());
+            return new OrderDTO(Direction.卖出, position.getSecurityShare() - Util.calVolume(positionSnapshot.getSecurityShare(), ratio, 10L), securityService.getSecurityName(position.getSecurityCode()), position.getSecurityCode(), BigDecimal.valueOf(priceService.getLatestPrice(position.getSecurityCode())).multiply(BigDecimal.valueOf(position.getSecurityShare())).doubleValue());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -211,7 +211,7 @@ public class OrderServiceImpl implements OrderService {
 //       执行下单开始
         if (order.getBuyOrSell().equals(Direction.买入)) {
             BigDecimal cash = orderPlacementClient.queryAcct().cash();
-            if (cash.compareTo(BigDecimal.valueOf(price).multiply(BigDecimal.valueOf(vol))) < 0){
+            if (cash.compareTo(BigDecimal.valueOf(price).multiply(BigDecimal.valueOf(vol))) < 0) {
                 log.info("cash: {} below marketValue: {}", cash, BigDecimal.valueOf(price).multiply(BigDecimal.valueOf(vol)));
                 return;
             }
