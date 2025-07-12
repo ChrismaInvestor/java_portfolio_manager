@@ -1,9 +1,9 @@
 package com.portfolio.manager.integration;
 
-import com.portfolio.manager.dto.AccountDTO;
-import com.portfolio.manager.dto.CancelableOrderDTO;
-import com.portfolio.manager.dto.PositionIntegrateDTO;
-import com.portfolio.manager.dto.TradeDTO;
+import com.portfolio.manager.dto.integration.AccountDTO;
+import com.portfolio.manager.dto.integration.CancelableOrderDTO;
+import com.portfolio.manager.dto.integration.PositionBrokerDTO;
+import com.portfolio.manager.dto.integration.TradeDTO;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -52,22 +52,22 @@ public class OrderPlacementClientImpl implements OrderPlacementClient {
         return null;
     }
 
-    @Override
-    public PositionIntegrateDTO checkPosition(String code) {
-        ResponseEntity<PositionIntegrateDTO> res;
-        try {
-            res = restTemplate.exchange("http://" + hostIP + "/position/{code}", HttpMethod.GET, null, new ParameterizedTypeReference<>() {
-            }, code);
-            return res.getBody();
-        } catch (Exception e) {
-            log.error("Code: {}, Check position: {}", code, e.getMessage());
-        }
-        return null;
-    }
+//    @Override
+//    public PositionIntegrateDTO checkPosition(String code) {
+//        ResponseEntity<PositionIntegrateDTO> res;
+//        try {
+//            res = restTemplate.exchange("http://" + hostIP + "/position/{code}", HttpMethod.GET, null, new ParameterizedTypeReference<>() {
+//            }, code);
+//            return res.getBody();
+//        } catch (Exception e) {
+//            log.error("Code: {}, Check position: {}", code, e.getMessage());
+//        }
+//        return null;
+//    }
 
     @Override
-    public List<PositionIntegrateDTO> queryAllPositions() {
-        ResponseEntity<List<PositionIntegrateDTO>> res;
+    public List<PositionBrokerDTO> queryAllPositions() {
+        ResponseEntity<List<PositionBrokerDTO>> res;
         try {
             res = restTemplate.exchange("http://" + hostIP + "/position", HttpMethod.GET, null, new ParameterizedTypeReference<>() {
             });

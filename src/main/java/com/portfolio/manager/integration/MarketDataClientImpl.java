@@ -2,8 +2,8 @@ package com.portfolio.manager.integration;
 
 import com.portfolio.manager.domain.Price;
 import com.portfolio.manager.domain.strategy_specific.CbStockMapping;
-import com.portfolio.manager.dto.BidAskBrokerDTO;
-import com.portfolio.manager.dto.SecurityDTO;
+import com.portfolio.manager.dto.integration.BidAskBrokerDTO;
+import com.portfolio.manager.dto.integration.SecurityInfoDTO;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,8 +25,8 @@ public class MarketDataClientImpl implements MarketDataClient {
     private String hostIP;
 
     @Override
-    public List<SecurityDTO> listAllStocksInfo() {
-        ResponseEntity<List<SecurityDTO>> stocks;
+    public List<SecurityInfoDTO> listAllStocksInfo() {
+        ResponseEntity<List<SecurityInfoDTO>> stocks;
         try {
             stocks = restTemplate.exchange("http://" + hostIP + "/stocks", HttpMethod.GET, null, new ParameterizedTypeReference<>() {
             });
@@ -53,9 +53,13 @@ public class MarketDataClientImpl implements MarketDataClient {
     @Override
     public List<BidAskBrokerDTO> getBidAsk(List<String> securityCodes) {
         ResponseEntity<List<Map>> bidAsk;
+        if (securityCodes.isEmpty()){
+            throw new IllegalArgumentException("empty codes");
+        }
         try {
             bidAsk = restTemplate.exchange("http://" + hostIP + "/bidAsk/{codes}", HttpMethod.GET, null, new ParameterizedTypeReference<>() {
             }, String.join(",", securityCodes));
+
             return Objects.requireNonNull(bidAsk.getBody()).stream().map(v -> new BidAskBrokerDTO(v.get("securityCode").toString(), Double.parseDouble(v.get("askPrice1").toString()), Double.parseDouble(v.get("bidPrice1").toString()), Integer.parseInt(v.get("askVol1").toString()), Integer.parseInt(v.get("bidVol1").toString()), Double.parseDouble(v.get("lastPrice").toString()), Double.parseDouble(v.get("lastClose").toString()),
                     Integer.parseInt(v.get("askVol2").toString()), Double.parseDouble(v.get("askPrice2").toString()), Integer.parseInt(v.get("bidVol2").toString()), Double.parseDouble(v.get("bidPrice2").toString()), Double.parseDouble(v.get("high").toString()))).toList();
         } catch (Exception e) {

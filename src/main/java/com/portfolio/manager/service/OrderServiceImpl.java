@@ -2,8 +2,8 @@ package com.portfolio.manager.service;
 
 import com.portfolio.manager.constant.Constant;
 import com.portfolio.manager.domain.*;
-import com.portfolio.manager.dto.OrderDTO;
-import com.portfolio.manager.dto.OrderInProgressDTO;
+import com.portfolio.manager.dto.ui.OrderDTO;
+import com.portfolio.manager.dto.ui.OrderInProgressDTO;
 import com.portfolio.manager.integration.OrderPlacementClient;
 import com.portfolio.manager.repository.OrderRepo;
 import com.portfolio.manager.repository.SubOrderRepo;
@@ -105,6 +105,35 @@ public class OrderServiceImpl implements OrderService {
                 }
         ).sum();
         return null;
+    }
+
+    @Override
+    public OrderDTO buy(String securityCode, BigDecimal targetPosition, Position currentPosition) {
+        long multiple = securityCode.startsWith("11") || securityCode.startsWith("12") ? Constant.CONVERTIBLE_BOND_MULTIPLE : Constant.STOCK_MULTIPLE;
+        String internalSecurityCode = securityCode.split("\\.")[0];
+        BigDecimal price;
+        try {
+            price = BigDecimal.valueOf(priceService.getLatestPrice(internalSecurityCode));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        log.info("securityCode: {}, price: {}, target position: {}", securityCode, price, targetPosition);
+        BigDecimal divide = targetPosition.divide(price.multiply(BigDecimal.valueOf(multiple)), RoundingMode.HALF_EVEN);
+        BigDecimal min = divide.setScale(0, RoundingMode.DOWN);
+        if(currentPosition == null){
+            return new OrderDTO(Direction.买入, min.multiply(BigDecimal.valueOf(multiple)).longValue(), securityService.getSecurityName(internalSecurityCode), securityCode, min.multiply(price).multiply(BigDecimal.valueOf(multiple)).doubleValue());
+        }
+        BigDecimal currentShare = BigDecimal.valueOf(currentPosition.getSecurityShare());
+        log.info("current share: {}", currentShare);
+        BigDecimal currentShareDividedByMultiple = currentShare.divide(BigDecimal.valueOf(multiple), RoundingMode.HALF_EVEN);
+        min = min.subtract(currentShareDividedByMultiple);
+        log.info("min: {}", min);
+        if (min.compareTo(BigDecimal.ZERO) < 0) {
+            OrderDTO order = new OrderDTO(Direction.卖出, min.abs().multiply(BigDecimal.valueOf(multiple)).longValue(), securityService.getSecurityName(internalSecurityCode), securityCode, min.abs().multiply(price).multiply(BigDecimal.valueOf(multiple)).doubleValue());
+            return order;
+        }
+        OrderDTO order = new OrderDTO(Direction.买入, min.multiply(BigDecimal.valueOf(multiple)).longValue(), securityService.getSecurityName(internalSecurityCode), securityCode, min.multiply(price).multiply(BigDecimal.valueOf(multiple)).doubleValue());
+        return order;
     }
 
     @Override

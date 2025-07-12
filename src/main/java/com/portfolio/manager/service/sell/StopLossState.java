@@ -1,6 +1,6 @@
 package com.portfolio.manager.service.sell;
 
-import com.portfolio.manager.dto.BidAskBrokerDTO;
+import com.portfolio.manager.dto.integration.BidAskBrokerDTO;
 
 public class StopLossState extends State{
     CrownSellStrategy crownSellStrategy;

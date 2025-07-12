@@ -4,7 +4,7 @@ import com.portfolio.manager.domain.Dynamics;
 import com.portfolio.manager.domain.Nav;
 import com.portfolio.manager.domain.Portfolio;
 import com.portfolio.manager.domain.Position;
-import com.portfolio.manager.dto.PortfolioDTO;
+import com.portfolio.manager.dto.ui.PortfolioDTO;
 
 import java.util.List;
 import java.util.Set;

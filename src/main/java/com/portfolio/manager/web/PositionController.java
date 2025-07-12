@@ -4,10 +4,10 @@ import com.portfolio.manager.domain.Direction;
 import com.portfolio.manager.domain.Portfolio;
 import com.portfolio.manager.domain.Position;
 import com.portfolio.manager.domain.strategy_specific.PositionBookForCrown;
-import com.portfolio.manager.dto.OrderDTO;
-import com.portfolio.manager.dto.OrderInProgressDTO;
-import com.portfolio.manager.dto.OrderPlacementDTO;
-import com.portfolio.manager.dto.PositionDTO;
+import com.portfolio.manager.dto.ui.OrderDTO;
+import com.portfolio.manager.dto.ui.OrderInProgressDTO;
+import com.portfolio.manager.dto.ui.OrderPlacementDTO;
+import com.portfolio.manager.dto.ui.PositionDTO;
 import com.portfolio.manager.notification.Notification;
 import com.portfolio.manager.repository.PositionBookForCrownRepo;
 import com.portfolio.manager.service.OrderService;
@@ -17,13 +17,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -64,21 +64,48 @@ public class PositionController {
     }
 
     @PostMapping
-    public List<OrderDTO> calOrders(@RequestBody PositionDTO positionDTO) {
-        List<Position> oldPositions = portfolioService.listPosition(positionDTO.portfolio());
-        Set<String> oldPositionCodes = oldPositions.stream().map(Position::getSecurityCode).collect(Collectors.toSet());
-        Set<String> newPositionCodes = positionDTO.positions().stream().map(p -> p.code().split("\\.")[0]).collect(Collectors.toSet());
-        Set<String> intersection = new HashSet<>(oldPositionCodes);
-        intersection.retainAll(newPositionCodes);
-        oldPositionCodes.removeAll(newPositionCodes);
-        List<Position> toSell = oldPositions.stream().filter(oldPosition -> oldPositionCodes.contains(oldPosition.getSecurityCode())).toList();
+    public List<OrderDTO> calOrdersWithWeights(@RequestBody PositionDTO positionDTO) {
+        var portfolio = portfolioService.getPortfolio(positionDTO.portfolio());
+        BigDecimal currentTotalMarketValue = BigDecimal.valueOf(portfolioService.getDynamics(portfolio).getTotalMarketValue());
+        int positionSize = positionDTO.positions().size();
+        Map<String, BigDecimal> securityCodeTargetPositionMap = new HashMap<>();
+        positionDTO.positions().forEach(securityInfoDTO -> {
+            BigDecimal weight = securityInfoDTO.weight() == null ? BigDecimal.ONE.divide(BigDecimal.valueOf(positionSize), 6, RoundingMode.HALF_EVEN) : new BigDecimal(securityInfoDTO.weight());
+            BigDecimal targetPosition = currentTotalMarketValue.multiply(weight);
+            String internalSecurityCode = securityInfoDTO.code().split("\\.")[0];
+            securityCodeTargetPositionMap.put(internalSecurityCode, targetPosition);
+        });
+        List<Position> currentPositions = portfolioService.listPosition(positionDTO.portfolio());
+        Map<String, Position> currentPositionsMap = currentPositions.stream().collect(Collectors.toMap(Position::getSecurityCode, Function.identity()));
+        List<OrderDTO> buyOrders = new ArrayList<>();
+        securityCodeTargetPositionMap.forEach((securityCode, targetPosition) -> {
+            log.info("security code: {}, currentPosition: {}", securityCode, currentPositionsMap.getOrDefault(securityCode, null));
+            var order = orderService.buy(securityCode, targetPosition, currentPositionsMap.getOrDefault(securityCode, null));
+            buyOrders.add(order);
+        });
+        List<Position> toSell = currentPositions.stream().filter(currentPosition -> !securityCodeTargetPositionMap.containsKey(currentPosition.getSecurityCode())).toList();
         List<OrderDTO> sellOrder = orderService.sell(toSell);
-        double toSellMarketValue = sellOrder.stream().mapToDouble(OrderDTO::value).sum();
-        double cash = portfolioService.getCash(positionDTO.portfolio());
-        List<OrderDTO> buyOrder = orderService.buySplitEven(newPositionCodes, toSellMarketValue, cash, oldPositions.stream().filter(position -> intersection.contains(position.getSecurityCode())).toList());
-        log.info("buy total: {}", buyOrder.stream().mapToDouble(OrderDTO::value).sum());
-        return Stream.concat(sellOrder.stream(), buyOrder.stream()).toList();
+        return Stream.concat(sellOrder.stream(), buyOrders.stream()).toList();
     }
+
+//    @PostMapping
+//    public List<OrderDTO> calOrders(@RequestBody PositionDTO positionDTO) {
+//        var portfolio = portfolioService.getPortfolio(positionDTO.portfolio());
+//        log.info("total market value: {}", portfolioService.getDynamics(portfolio).getTotalMarketValue());
+//        List<Position> oldPositions = portfolioService.listPosition(positionDTO.portfolio());
+//        Set<String> oldPositionCodes = oldPositions.stream().map(Position::getSecurityCode).collect(Collectors.toSet());
+//        Set<String> newPositionCodes = positionDTO.positions().stream().map(p -> p.code().split("\\.")[0]).collect(Collectors.toSet());
+//        Set<String> intersection = new HashSet<>(oldPositionCodes);
+//        intersection.retainAll(newPositionCodes);
+//        oldPositionCodes.removeAll(newPositionCodes);
+//        List<Position> toSell = oldPositions.stream().filter(oldPosition -> oldPositionCodes.contains(oldPosition.getSecurityCode())).toList();
+//        List<OrderDTO> sellOrder = orderService.sell(toSell);
+//        double toSellMarketValue = sellOrder.stream().mapToDouble(OrderDTO::value).sum();
+//        double cash = portfolioService.getCash(positionDTO.portfolio());
+//        List<OrderDTO> buyOrder = orderService.buySplitEven(newPositionCodes, toSellMarketValue, cash, oldPositions.stream().filter(position -> intersection.contains(position.getSecurityCode())).toList());
+//        log.info("buy total: {}", buyOrder.stream().mapToDouble(OrderDTO::value).sum());
+//        return Stream.concat(sellOrder.stream(), buyOrder.stream()).toList();
+//    }
 
     @PostMapping("order")
     public void addOrders(@RequestBody OrderPlacementDTO orderPlacement) {

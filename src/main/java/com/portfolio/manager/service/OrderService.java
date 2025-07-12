@@ -1,8 +1,8 @@
 package com.portfolio.manager.service;
 
 import com.portfolio.manager.domain.*;
-import com.portfolio.manager.dto.OrderDTO;
-import com.portfolio.manager.dto.OrderInProgressDTO;
+import com.portfolio.manager.dto.ui.OrderDTO;
+import com.portfolio.manager.dto.ui.OrderInProgressDTO;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -15,6 +15,8 @@ public interface OrderService {
     List<OrderDTO> buySplitEven(Set<String> securityCodes, double toSellMarketValue, double cash, List<Position> holdings);
 
     List<OrderDTO> buySplitEvenV2(Set<String> securityCodes,  double cash, List<Position> holdings);
+
+    OrderDTO buy(String securityCode, BigDecimal targetPosition, Position currentPosition);
 
     //Estimation
     List<OrderDTO> sell(List<Position> toSell);

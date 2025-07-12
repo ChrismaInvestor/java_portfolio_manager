@@ -1,4 +1,4 @@
-package com.portfolio.manager.dto;
+package com.portfolio.manager.dto.ui;
 
 import com.portfolio.manager.domain.Direction;
 

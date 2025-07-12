@@ -1,9 +1,9 @@
 package com.portfolio.manager.integration;
 
-import com.portfolio.manager.dto.AccountDTO;
-import com.portfolio.manager.dto.CancelableOrderDTO;
-import com.portfolio.manager.dto.PositionIntegrateDTO;
-import com.portfolio.manager.dto.TradeDTO;
+import com.portfolio.manager.dto.integration.AccountDTO;
+import com.portfolio.manager.dto.integration.CancelableOrderDTO;
+import com.portfolio.manager.dto.integration.PositionBrokerDTO;
+import com.portfolio.manager.dto.integration.TradeDTO;
 
 import java.util.List;
 
@@ -15,10 +15,7 @@ public interface OrderPlacementClient {
     // 返回orderId
     String sell(String code, Double price, Integer vol);
 
-    @Deprecated
-    PositionIntegrateDTO checkPosition(String code);
-
-    List<PositionIntegrateDTO> queryAllPositions();
+    List<PositionBrokerDTO> queryAllPositions();
 
     List<TradeDTO> listTodayTrades();
 

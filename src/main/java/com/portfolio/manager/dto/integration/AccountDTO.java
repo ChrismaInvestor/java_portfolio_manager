@@ -1,4 +1,4 @@
-package com.portfolio.manager.dto;
+package com.portfolio.manager.dto.integration;
 
 import java.math.BigDecimal;
 

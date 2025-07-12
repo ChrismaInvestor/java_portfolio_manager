@@ -27,7 +27,11 @@ public class PriceServiceImpl implements PriceService {
         if (bidAskList.isEmpty()){
             throw new IOException("Price quote met issues");
         }
-        return bidAskList.get(0).askPrice1();
+        Double askPrice1 = bidAskList.get(0).askPrice1();
+        if (BigDecimal.valueOf(askPrice1).compareTo(BigDecimal.ZERO) > 0){
+            return askPrice1;
+        }
+        return bidAskList.get(0).lastPrice();
     }
 
     @Override

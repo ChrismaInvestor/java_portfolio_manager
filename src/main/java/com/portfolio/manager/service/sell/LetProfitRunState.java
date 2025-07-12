@@ -2,7 +2,7 @@ package com.portfolio.manager.service.sell;
 
 import com.portfolio.manager.constant.Constant;
 import com.portfolio.manager.domain.strategy_specific.CbStockMapping;
-import com.portfolio.manager.dto.BidAskBrokerDTO;
+import com.portfolio.manager.dto.integration.BidAskBrokerDTO;
 import com.portfolio.manager.integration.MarketDataClient;
 import com.portfolio.manager.repository.CbStockMappingRepo;
 import com.portfolio.manager.task.TradeTask;

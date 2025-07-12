@@ -1,7 +1,7 @@
 package com.portfolio.manager.service.sell;
 
 import com.portfolio.manager.constant.Constant;
-import com.portfolio.manager.dto.BidAskBrokerDTO;
+import com.portfolio.manager.dto.integration.BidAskBrokerDTO;
 import com.portfolio.manager.task.TradeTask;
 import com.portfolio.manager.util.Util;
 

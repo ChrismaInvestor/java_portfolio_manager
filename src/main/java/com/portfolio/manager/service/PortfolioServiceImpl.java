@@ -1,11 +1,12 @@
 package com.portfolio.manager.service;
 
+import com.portfolio.manager.data.PositionData;
 import com.portfolio.manager.domain.*;
 import com.portfolio.manager.domain.strategy_specific.PositionBookForCrown;
-import com.portfolio.manager.dto.AccountDTO;
-import com.portfolio.manager.dto.PortfolioDTO;
-import com.portfolio.manager.dto.PositionIntegrateDTO;
-import com.portfolio.manager.dto.TradeDTO;
+import com.portfolio.manager.domain.strategy_specific.PositionLock;
+import com.portfolio.manager.dto.integration.PositionBrokerDTO;
+import com.portfolio.manager.dto.integration.TradeDTO;
+import com.portfolio.manager.dto.ui.PortfolioDTO;
 import com.portfolio.manager.integration.OrderPlacementClient;
 import com.portfolio.manager.repository.*;
 import com.portfolio.manager.task.TradeTask;
@@ -17,11 +18,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.function.Function;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -46,7 +43,13 @@ public class PortfolioServiceImpl implements PortfolioService {
     OrderPlacementClient orderPlacemenClient;
 
     @Resource
+    PositionData positionData;
+
+    @Resource
     OrderService orderService;
+
+    @Resource
+    PositionLockRepo positionLockRepo;
 
     @Override
     public List<Position> listPosition(String portfolioName) {
@@ -76,13 +79,7 @@ public class PortfolioServiceImpl implements PortfolioService {
         ).mapToDouble(TradeDTO::amount).sum() : 0.0d;
         Dynamics dynamics = this.getDynamics(portfolio);
         dynamics.setCash(BigDecimal.valueOf(dynamics.getLastDayCash()).subtract(BigDecimal.valueOf(todayTradeTotal)).doubleValue());
-        AccountDTO account = orderPlacemenClient.queryAcct();
-        if (account == null) {
-            dynamics.setSecurityMarketValue(portfolio.getPositions().stream().mapToDouble(Position::getMarketValue).sum());
-        } else {
-            dynamics.setSecurityMarketValue(account.marketValue().doubleValue());
-        }
-
+        dynamics.setSecurityMarketValue(portfolio.getPositions().stream().mapToDouble(Position::getMarketValue).sum());
         dynamics.setTotalMarketValue(BigDecimal.valueOf(dynamics.getCash()).add(BigDecimal.valueOf(dynamics.getSecurityMarketValue())).doubleValue());
         this.updateDynamics(dynamics);
     }
@@ -102,6 +99,7 @@ public class PortfolioServiceImpl implements PortfolioService {
         return portfolioRepo.findAll();
     }
 
+//    初始化一个新的投资组合
     @Override
     public void addPortfolio(PortfolioDTO portfolioDTO) {
         Portfolio portfolio = new Portfolio();
@@ -128,7 +126,8 @@ public class PortfolioServiceImpl implements PortfolioService {
         Set<String> securityCodesOfOrders = orderService.listOrders(portfolio.getName()).stream().parallel().filter(order -> order.getUpdateTime().toLocalDate().isEqual(today)).map(Order::getSecurityCode).collect(Collectors.toSet());
         codes.addAll(securityCodesOfOrders);
 
-        Map<String, PositionIntegrateDTO> positionOnBrokerMap = orderPlacemenClient.queryAllPositions().stream().collect(Collectors.toMap(PositionIntegrateDTO::code, Function.identity()));
+        Map<String, PositionBrokerDTO> positionOnBrokerMap = positionData.getMap();
+//        Map<String, PositionBrokerDTO> positionOnBrokerMap = orderPlacemenClient.queryAllPositions().stream().collect(Collectors.toMap(PositionBrokerDTO::code, Function.identity()));
 //        Update position and position book
         codes.forEach(code -> {
 //            var positionOnBroker = orderPlacemenClient.checkPosition(code);
@@ -142,6 +141,13 @@ public class PortfolioServiceImpl implements PortfolioService {
                         currentPosition.setSecurityShare(Long.valueOf(positionOnBroker.vol()));
                         currentPosition.setCost(BigDecimal.valueOf(positionOnBroker.unitCost()).multiply(BigDecimal.valueOf(currentPosition.getSecurityShare())).doubleValue());
                         currentPosition.setMarketValue(positionOnBroker.marketValue());
+
+                        PositionLock positionLock = positionLockRepo.findBySecurityCode(currentPosition.getSecurityCode());
+                        if (!Objects.isNull(positionLock)){
+                            currentPosition.setSecurityShare(positionLock.getSecurityShare());
+                            currentPosition.setMarketValue(BigDecimal.valueOf(positionOnBroker.marketValue()).multiply(BigDecimal.valueOf(positionLock.getSecurityShare())).divide(BigDecimal.valueOf(positionOnBroker.vol()), 2, RoundingMode.DOWN).doubleValue());
+                        }
+
                         positionRepo.save(currentPosition);
                     }, () -> {
 //                        Add new position

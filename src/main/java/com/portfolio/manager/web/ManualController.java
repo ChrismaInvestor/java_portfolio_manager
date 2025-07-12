@@ -2,7 +2,7 @@ package com.portfolio.manager.web;
 
 import com.portfolio.manager.domain.Dynamics;
 import com.portfolio.manager.domain.Portfolio;
-import com.portfolio.manager.dto.OrderDTO;
+import com.portfolio.manager.dto.ui.OrderDTO;
 import com.portfolio.manager.service.OrderService;
 import com.portfolio.manager.service.PortfolioService;
 import jakarta.annotation.Resource;

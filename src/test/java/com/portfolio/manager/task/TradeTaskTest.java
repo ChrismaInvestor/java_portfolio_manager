@@ -55,47 +55,47 @@ public class TradeTaskTest {
 
     @Test
     public void buyBackForCrown() {
-        log.info("whole portfolio stop loss: {}", TradeTask.getWholePortfolioStopLossBar());
-        BigDecimal lastNav = new BigDecimal("1");
-        BigDecimal currentNav = new BigDecimal("1.01");
-        if (currentNav.divide(lastNav, 4, RoundingMode.HALF_UP).compareTo(Constant.CROWN_WHOLE_PORTFOLIO_STOP_LOSS_EXCEPTION) > 0 && currentNav.divide(lastNav, 4, RoundingMode.HALF_UP).compareTo(Constant.CROWN_WHOLE_PORTFOLIO_STOP_LOSS) <= 0) {
-            log.info("The whole portfolio is reaching stop loss line");
-        }
-
-        Portfolio portfolio = portfolioService.getPortfolio("皇冠");
-        List<Position> positions = portfolioService.listPosition("皇冠");
-        Optional<PositionSnapshot> posSnapShot = positionSnapshotService.get().stream().filter(position -> position.getSecurityCode().equals("127007")).findFirst();
-        Optional<Position> pos = positions.stream().filter(position -> position.getSecurityCode().equals("127007")).findFirst();
-        if (posSnapShot.isPresent() && pos.isPresent()) {
-            log.info("======new stop loss======");
-            marketDataClient.getBidAsk(List.of("127007")).forEach(
-                    bidAskBrokerDTO -> tradeTask.handleStopLossMultiTier(pos.get(), posSnapShot.get(), portfolio, bidAskBrokerDTO,"Stop hit")
-            );
-        }
-
-//        var codes = List.of("118019","113615", "123106", "113516", "113534", "128042");
-        var codes = List.of("123118","123106","128042");
-        log.info("account info: {}", orderPlacementClient.queryAcct());
-        Map<String, CrownSellStrategy> cbSellStrategyMapping = new ConcurrentHashMap<>();
-        for (int i = 0; i < 3; i++) {
-            marketDataClient.getBidAsk(codes).forEach(
-                    bidAskBrokerDTO -> {
-                        log.info("is sellable: {}", tradeTask.isSellable(bidAskBrokerDTO));
-                        log.info("is slump: {}", tradeTask.isSlump(bidAskBrokerDTO));
-                        tradeTask.updateVWAP();
-
-//                    log.info("price: {}", bidAskBrokerDTO);
-                    if (cbSellStrategyMapping.containsKey(bidAskBrokerDTO.securityCode())) {
-                        var strategy = cbSellStrategyMapping.get(bidAskBrokerDTO.securityCode());
-                        strategy.updateState(bidAskBrokerDTO);
-                    } else {
-                        CrownSellStrategy strategy = new CrownSellStrategy(marketDataClient, cbStockMappingRepo, vwap);
-                        strategy.updateState(bidAskBrokerDTO);
-                        cbSellStrategyMapping.put(bidAskBrokerDTO.securityCode(), strategy);
-                    }
-//                    log.info("strategy map: {}", cbSellStrategyMapping.get(bidAskBrokerDTO.securityCode()));
-                    });
-        }
+//        log.info("whole portfolio stop loss: {}", TradeTask.getWholePortfolioStopLossBar());
+//        BigDecimal lastNav = new BigDecimal("1");
+//        BigDecimal currentNav = new BigDecimal("1.01");
+//        if (currentNav.divide(lastNav, 4, RoundingMode.HALF_UP).compareTo(Constant.CROWN_WHOLE_PORTFOLIO_STOP_LOSS_EXCEPTION) > 0 && currentNav.divide(lastNav, 4, RoundingMode.HALF_UP).compareTo(Constant.CROWN_WHOLE_PORTFOLIO_STOP_LOSS) <= 0) {
+//            log.info("The whole portfolio is reaching stop loss line");
+//        }
+//
+//        Portfolio portfolio = portfolioService.getPortfolio("皇冠");
+//        List<Position> positions = portfolioService.listPosition("皇冠");
+//        Optional<PositionSnapshot> posSnapShot = positionSnapshotService.get().stream().filter(position -> position.getSecurityCode().equals("127007")).findFirst();
+//        Optional<Position> pos = positions.stream().filter(position -> position.getSecurityCode().equals("127007")).findFirst();
+//        if (posSnapShot.isPresent() && pos.isPresent()) {
+//            log.info("======new stop loss======");
+//            marketDataClient.getBidAsk(List.of("127007")).forEach(
+//                    bidAskBrokerDTO -> tradeTask.handleStopLossMultiTier(pos.get(), posSnapShot.get(), portfolio, bidAskBrokerDTO,"Stop hit")
+//            );
+//        }
+//
+////        var codes = List.of("118019","113615", "123106", "113516", "113534", "128042");
+//        var codes = List.of("123118","123106","128042");
+//        log.info("account info: {}", orderPlacementClient.queryAcct());
+//        Map<String, CrownSellStrategy> cbSellStrategyMapping = new ConcurrentHashMap<>();
+//        for (int i = 0; i < 3; i++) {
+//            marketDataClient.getBidAsk(codes).forEach(
+//                    bidAskBrokerDTO -> {
+//                        log.info("is sellable: {}", tradeTask.isSellable(bidAskBrokerDTO));
+//                        log.info("is slump: {}", tradeTask.isSlump(bidAskBrokerDTO));
+//                        tradeTask.updateVWAP();
+//
+////                    log.info("price: {}", bidAskBrokerDTO);
+//                    if (cbSellStrategyMapping.containsKey(bidAskBrokerDTO.securityCode())) {
+//                        var strategy = cbSellStrategyMapping.get(bidAskBrokerDTO.securityCode());
+//                        strategy.updateState(bidAskBrokerDTO);
+//                    } else {
+//                        CrownSellStrategy strategy = new CrownSellStrategy(marketDataClient, cbStockMappingRepo, vwap);
+//                        strategy.updateState(bidAskBrokerDTO);
+//                        cbSellStrategyMapping.put(bidAskBrokerDTO.securityCode(), strategy);
+//                    }
+////                    log.info("strategy map: {}", cbSellStrategyMapping.get(bidAskBrokerDTO.securityCode()));
+//                    });
+//        }
 //        log.info("cash: {}", orderPlacementClient.checkCash());
 //
 //        SubOrder subOrder = new SubOrder();

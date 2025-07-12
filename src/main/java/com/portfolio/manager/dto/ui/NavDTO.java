@@ -1,4 +1,4 @@
-package com.portfolio.manager.dto;
+package com.portfolio.manager.dto.ui;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
