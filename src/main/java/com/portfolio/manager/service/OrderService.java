@@ -14,8 +14,6 @@ public interface OrderService {
     //Estimation
     List<OrderDTO> buySplitEven(Set<String> securityCodes, double toSellMarketValue, double cash, List<Position> holdings);
 
-    List<OrderDTO> buySplitEvenV2(Set<String> securityCodes,  double cash, List<Position> holdings);
-
     OrderDTO buy(String securityCode, BigDecimal targetPosition, Position currentPosition);
 
     //Estimation

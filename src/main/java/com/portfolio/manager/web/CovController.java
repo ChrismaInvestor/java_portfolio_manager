@@ -1,10 +1,7 @@
 package com.portfolio.manager.web;
 
 import com.portfolio.manager.domain.CovInfo;
-import com.portfolio.manager.integration.MarketDataClient;
-import com.portfolio.manager.integration.OrderPlacementClient;
 import com.portfolio.manager.service.tracking.CovInfoService;
-import com.portfolio.manager.strategy.CovShakingStrategy;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -12,9 +9,6 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @RequestMapping("/cov")

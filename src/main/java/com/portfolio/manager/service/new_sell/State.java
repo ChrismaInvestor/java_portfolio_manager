@@ -34,7 +34,6 @@ public abstract class State {
         return Util.priceMovementDivide(bidAskBrokerDTO.bidPrice1(), bidAskBrokerDTO.lastClose()).compareTo(upThreshold) > 0;
     }
 
-    ;
 
     @Override
     public String toString() {

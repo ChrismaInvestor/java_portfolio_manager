@@ -1,16 +1,10 @@
 package com.portfolio.manager;
 
-import com.portfolio.manager.domain.Portfolio;
-import com.portfolio.manager.domain.Position;
 import com.portfolio.manager.service.PortfolioService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
-
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.List;
 
 @Slf4j
 @SpringBootTest

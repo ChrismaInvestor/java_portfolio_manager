@@ -66,7 +66,7 @@ public class CovInfoServiceImpl implements CovInfoService{
             }
             double covPrice = covCodePriceMap.get(cov.getCode());
             double stockPrice = stockCodePriceMap.get(cov.getStockCode());
-            var actualPremium = this.calPremium(BigDecimal.valueOf(covPrice), BigDecimal.valueOf(stockPrice), BigDecimal.valueOf(cov.getConvertedPrice()));
+            var actualPremium = calPremium(BigDecimal.valueOf(covPrice), BigDecimal.valueOf(stockPrice), BigDecimal.valueOf(cov.getConvertedPrice()));
             ans.put(cov.getCode(), actualPremium);
         });
         return ans;

@@ -94,20 +94,6 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public List<OrderDTO> buySplitEvenV2(Set<String> securityCodes, double cash, List<Position> holdings) {
-        double holdingsValue = holdings.stream().mapToDouble(holding ->
-                {
-                    try {
-                        return BigDecimal.valueOf(priceService.getLatestPrice(holding.getSecurityCode())).multiply(BigDecimal.valueOf(holding.getSecurityShare())).doubleValue();
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-        ).sum();
-        return null;
-    }
-
-    @Override
     public OrderDTO buy(String securityCode, BigDecimal targetPosition, Position currentPosition) {
         long multiple = securityCode.startsWith("11") || securityCode.startsWith("12") ? Constant.CONVERTIBLE_BOND_MULTIPLE : Constant.STOCK_MULTIPLE;
         String internalSecurityCode = securityCode.split("\\.")[0];
@@ -129,11 +115,9 @@ public class OrderServiceImpl implements OrderService {
         min = min.subtract(currentShareDividedByMultiple);
         log.info("min: {}", min);
         if (min.compareTo(BigDecimal.ZERO) < 0) {
-            OrderDTO order = new OrderDTO(Direction.卖出, min.abs().multiply(BigDecimal.valueOf(multiple)).longValue(), securityService.getSecurityName(internalSecurityCode), securityCode, min.abs().multiply(price).multiply(BigDecimal.valueOf(multiple)).doubleValue());
-            return order;
+            return new OrderDTO(Direction.卖出, min.abs().multiply(BigDecimal.valueOf(multiple)).longValue(), securityService.getSecurityName(internalSecurityCode), securityCode, min.abs().multiply(price).multiply(BigDecimal.valueOf(multiple)).doubleValue());
         }
-        OrderDTO order = new OrderDTO(Direction.买入, min.multiply(BigDecimal.valueOf(multiple)).longValue(), securityService.getSecurityName(internalSecurityCode), securityCode, min.multiply(price).multiply(BigDecimal.valueOf(multiple)).doubleValue());
-        return order;
+        return new OrderDTO(Direction.买入, min.multiply(BigDecimal.valueOf(multiple)).longValue(), securityService.getSecurityName(internalSecurityCode), securityCode, min.multiply(price).multiply(BigDecimal.valueOf(multiple)).doubleValue());
     }
 
     @Override
